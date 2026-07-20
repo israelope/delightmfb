@@ -69,7 +69,7 @@ export default function LoanQueue() {
   const openCount = loans.filter((l) => ['requested', 'approved'].includes(l.status)).length;
 
   return (
-    <div className="mt-8 rounded-sm border border-rule bg-parchment-soft p-6">
+    <div className=" rounded-sm border border-rule bg-parchment-soft p-6">
       <div>
         <h2 className="font-display text-lg font-semibold text-ink">
           Loans{openCount > 0 && <span className="text-brass"> — {openCount} need action</span>}

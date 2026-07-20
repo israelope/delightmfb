@@ -109,7 +109,7 @@ export default function BatchContributionLogger() {
   }
 
   return (
-    <div className="mt-8 rounded-sm border border-rule bg-parchment-soft p-6">
+    <div className=" rounded-sm border border-rule bg-parchment-soft p-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="font-display text-lg font-semibold text-ink">Log contributions</h2>
