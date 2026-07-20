@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import SignOutButton from '@/components/features/SignOutButton';
+import Passbook from '@/components/features/Passbook';
 
 export default async function MemberDashboardPage() {
   const supabase = await createClient();
@@ -29,9 +30,11 @@ export default async function MemberDashboardPage() {
           </div>
           <SignOutButton />
         </div>
+
+        <Passbook userId={user.id} />
+
         <p className="mt-8 font-body text-sm text-ink-muted">
-          Your digital passbook (contribution ledger and loan eligibility) builds out in
-          Milestone 3.
+          Loan eligibility and upcoming deadlines build out in a later milestone.
         </p>
       </div>
     </div>
