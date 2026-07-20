@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import SignOutButton from '@/components/features/SignOutButton';
 import Passbook from '@/components/features/Passbook';
+import LoanPortal from '@/components/features/LoanPortal';
 
 export default async function MemberDashboardPage() {
   const supabase = await createClient();
@@ -33,9 +34,7 @@ export default async function MemberDashboardPage() {
 
         <Passbook userId={user.id} />
 
-        <p className="mt-8 font-body text-sm text-ink-muted">
-          Loan eligibility and upcoming deadlines build out in a later milestone.
-        </p>
+        <LoanPortal userId={user.id} />
       </div>
     </div>
   );

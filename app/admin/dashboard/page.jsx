@@ -5,6 +5,7 @@ import InviteCodeGenerator from '@/components/features/InviteCodeGenerator';
 import MemberManagement from '@/components/features/MemberManagement';
 import OverviewStats from '@/components/features/OverviewStats';
 import BatchContributionLogger from '@/components/features/BatchContributionLogger';
+import LoanQueue from '@/components/features/LoanQueue';
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -44,9 +45,7 @@ export default async function AdminDashboardPage() {
 
         <BatchContributionLogger />
 
-        <p className="mt-8 font-body text-sm text-ink-muted">
-          The loan queue is still to come in a later milestone.
-        </p>
+        <LoanQueue />
       </div>
     </div>
   );
