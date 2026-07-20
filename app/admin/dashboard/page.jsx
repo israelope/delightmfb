@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import SignOutButton from '@/components/features/SignOutButton';
+import InviteCodeGenerator from '@/components/features/InviteCodeGenerator';
+import MemberManagement from '@/components/features/MemberManagement';
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -27,9 +29,15 @@ export default async function AdminDashboardPage() {
           </div>
           <SignOutButton />
         </div>
+
+        <div className="mt-8">
+          <InviteCodeGenerator />
+        </div>
+
+        <MemberManagement />
+
         <p className="mt-8 font-body text-sm text-ink-muted">
-          The Command Center (invite codes, member approvals, contribution logging, loan queue)
-          builds out in Milestone 2.
+          Contribution logging and the loan queue are still to come in later milestones.
         </p>
       </div>
     </div>
