@@ -8,10 +8,10 @@ export default function AdminMembersPage() {
       <p className="mt-1 font-body text-sm text-ink-muted">
         Generate invite codes and manage member accounts.
       </p>
-      <div className="mt-6">
-        <InviteCodeGenerator />
+      <div className="mb-6">
+        <MemberManagement />
       </div>
-      <MemberManagement />
+      <InviteCodeGenerator />
     </div>
   );
 }
