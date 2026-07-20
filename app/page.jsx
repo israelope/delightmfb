@@ -38,12 +38,12 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 py-20 md:grid-cols-2 md:py-28">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 py-14 md:grid-cols-2 md:py-28">
           <div>
             <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-cooperative">
               Thrift &amp; Credit Cooperative Society
             </p>
-            <h1 className="max-w-lg font-display text-5xl font-semibold leading-[1.08] text-ink md:text-6xl">
+            <h1 className="max-w-lg font-display text-4xl font-semibold leading-[1.1] text-ink sm:text-5xl md:text-6xl md:leading-[1.08]">
               The passbook,{' '}
               <span className="italic text-cooperative">now impossible to lose.</span>
             </h1>
@@ -94,7 +94,7 @@ export default function LandingPage() {
             <PassbookStamp
               label="VERIFIED"
               state="live"
-              className="absolute -right-8 -top-8 h-32 w-32 md:-right-10 md:-top-10 md:h-36 md:w-36"
+              className="absolute -right-4 -top-4 h-24 w-24 sm:-right-8 sm:-top-8 sm:h-32 sm:w-32 md:-right-10 md:-top-10 md:h-36 md:w-36"
             />
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function LandingPage() {
 
       {/* How it works — a real sequence, so numbering earns its place */}
       <section className="border-t border-rule bg-parchment-soft">
-        <div className="mx-auto max-w-6xl px-6 py-20">
+        <div className="mx-auto max-w-6xl px-6 py-14 md:py-20">
           <h2 className="font-display text-3xl font-semibold text-ink">How membership works</h2>
           <p className="mt-2 max-w-xl font-body text-ink-muted">
             Four steps, the same order every officer has used offline for years — now just
@@ -125,7 +125,7 @@ export default function LandingPage() {
 
       {/* About / trust */}
       <section className="border-t border-rule">
-        <div className="mx-auto max-w-6xl px-6 py-20">
+        <div className="mx-auto max-w-6xl px-6 py-14 md:py-20">
           <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
             <div className="md:col-span-2">
               <h2 className="font-display text-3xl font-semibold text-ink">
@@ -137,7 +137,7 @@ export default function LandingPage() {
                 offline, so the ledger you see here always matches the one in the office.
               </p>
             </div>
-            <div className="space-y-6 border-l border-rule pl-8">
+            <div className="space-y-6 border-t border-rule pt-8 md:border-l md:border-t-0 md:pl-8 md:pt-0">
               <div>
                 <p className="font-display text-2xl text-cooperative">Zero</p>
                 <p className="font-body text-sm text-ink-muted">payment processors involved</p>

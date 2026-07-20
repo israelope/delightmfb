@@ -51,7 +51,7 @@ export default async function Passbook({ userId }) {
             Nothing logged yet — check back after your next contribution.
           </p>
         ) : (
-          <div className="mt-6 overflow-x-auto">
+          <div className=" overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-rule text-xs uppercase tracking-wider text-ink-muted">

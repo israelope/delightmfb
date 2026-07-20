@@ -89,7 +89,7 @@ export default function LoanPortal({ userId }) {
   }
 
   return (
-    <div className="mt-8 rounded-sm border border-rule bg-parchment-soft p-6">
+    <div className=" rounded-sm border border-rule bg-parchment-soft p-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-lg font-semibold text-ink">Loans</h2>

@@ -12,7 +12,7 @@ export default function Navbar() {
             Delight <span className="text-cooperative">MFB</span>
           </span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link
             href="/login"
             className="font-body text-sm font-medium text-ink hover:text-cooperative"
@@ -20,8 +20,9 @@ export default function Navbar() {
             Sign in
           </Link>
           <Link href="/register">
-            <Button variant="primary" className="px-4 py-2">
-              Join the cooperative
+            <Button variant="primary" className="px-3 py-2 text-xs sm:px-4 sm:text-sm">
+              <span className="sm:hidden">Join</span>
+              <span className="hidden sm:inline">Join the cooperative</span>
             </Button>
           </Link>
         </div>
