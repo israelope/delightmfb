@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import SignOutButton from '@/components/features/SignOutButton';
 import InviteCodeGenerator from '@/components/features/InviteCodeGenerator';
 import MemberManagement from '@/components/features/MemberManagement';
+import OverviewStats from '@/components/features/OverviewStats';
+import BatchContributionLogger from '@/components/features/BatchContributionLogger';
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -31,13 +33,19 @@ export default async function AdminDashboardPage() {
         </div>
 
         <div className="mt-8">
+          <OverviewStats />
+        </div>
+
+        <div className="mt-8">
           <InviteCodeGenerator />
         </div>
 
         <MemberManagement />
 
+        <BatchContributionLogger />
+
         <p className="mt-8 font-body text-sm text-ink-muted">
-          Contribution logging and the loan queue are still to come in later milestones.
+          The loan queue is still to come in a later milestone.
         </p>
       </div>
     </div>
