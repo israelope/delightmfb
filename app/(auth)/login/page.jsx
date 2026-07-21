@@ -81,6 +81,12 @@ export default function LoginPage() {
           Register with an invite code
         </Link>
       </p>
+      <div className="flex justify-center items-center">
+  <label htmlFor="password"><Link href="/forgot-password" className="text-sm font-medium text-cooperative hover:underline">
+    Forgot password?
+  </Link></label>
+  
+</div>
     </>
   );
 }

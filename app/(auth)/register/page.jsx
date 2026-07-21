@@ -8,26 +8,70 @@ import { createClient } from '@/lib/supabase/client';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 
+// Catch frequent domain typos before submission
+const COMMON_TYPOS = {
+  'gamil.com': 'gmail.com',
+  'gmal.com': 'gmail.com',
+  'gmial.com': 'gmail.com',
+  'yaho.com': 'yahoo.com',
+  'yaho.co.uk': 'yahoo.co.uk',
+  'outlok.com': 'outlook.com',
+  'hotmial.com': 'hotmail.com',
+};
+
+function checkEmailTypo(emailStr) {
+  if (!emailStr || !emailStr.includes('@')) return null;
+  const domain = emailStr.split('@')[1]?.toLowerCase().trim();
+  if (COMMON_TYPOS[domain]) {
+    return `Did you mean @${COMMON_TYPOS[domain]}?`;
+  }
+  return null;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [confirmEmail, setConfirmEmail] = useState(''); // NEW STATE
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [emailTypoWarning, setEmailTypoWarning] = useState(''); // NEW STATE
+  
   const [registered, setRegistered] = useState(false);
   const [cooperativeId, setCooperativeId] = useState(null);
+
+  // NEW: Real-time email typo check
+  function handleEmailChange(value) {
+    setEmail(value);
+    const suggestion = checkEmailTypo(value);
+    setEmailTypoWarning(suggestion || '');
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setFieldErrors({});
 
+    const newFieldErrors = {};
+
+    // NEW: Validate email matching
+    if (email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) {
+      newFieldErrors.confirmEmail = 'Email addresses do not match.';
+    }
+
+    // Validate password matching
     if (password !== confirmPassword) {
-      setFieldErrors({ confirmPassword: 'Passwords do not match.' });
+      newFieldErrors.confirmPassword = 'Passwords do not match.';
+    }
+
+    // Stop if there are field validation errors
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
       return;
     }
 
@@ -138,16 +182,39 @@ export default function RegisterPage() {
           onChange={(e) => setFullName(e.target.value)}
           required
         />
+        
+        {/* UPDATED: Email Input with Typo Warning */}
+        <div>
+          <Input
+            id="email"
+            label="Email"
+            type="email"
+            placeholder="you@example.com"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => handleEmailChange(e.target.value)}
+            required
+          />
+          {emailTypoWarning && (
+            <p className="mt-1 font-body text-xs font-medium text-brick">
+              ⚠️ {emailTypoWarning}
+            </p>
+          )}
+        </div>
+
+        {/* NEW: Confirm Email Input */}
         <Input
-          id="email"
-          label="Email"
+          id="confirmEmail"
+          label="Confirm email"
           type="email"
           placeholder="you@example.com"
           autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={confirmEmail}
+          onChange={(e) => setConfirmEmail(e.target.value)}
+          error={fieldErrors.confirmEmail}
           required
         />
+
         <Input
           id="password"
           label="Password"
@@ -199,4 +266,3 @@ export default function RegisterPage() {
     </>
   );
 }
-``
