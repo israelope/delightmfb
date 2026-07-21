@@ -18,16 +18,18 @@ export default function ForgotPasswordPage() {
     setFieldErrors({});
 
     // Validate email matching
-    if (email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) {
-      setFieldErrors({ confirmEmail: 'Email addresses do not match.' });
+    if (email.trim() !== confirmEmail.trim()) {
+      setFieldErrors({ confirmEmail: 'Emails do not match.' });
       return;
     }
 
     setLoading(true);
     const supabase = createClient();
     
-    // This tells Supabase to send the reset email
-    await supabase.auth.resetPasswordForEmail(email.trim());
+    // Using the default Supabase flow with a redirectTo URL
+    await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/auth/confirm?next=/reset-password`,
+    });
     
     setLoading(false);
     setSubmitted(true);
