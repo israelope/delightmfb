@@ -127,5 +127,3 @@ just not used to log in.
 the word when you want Milestone 2 (invite code generator + member approval
 queue) and I'll build it against this same setup.
 
-
-https://exmuqjiidpzfnjctdmzu.supabase.co/auth/v1/verify?token=pkce_0e8317b5f70e97275ba49181b5f3e2fe1f626d1b024f978cc7795b9d&type=recovery&redirect_to=http://localhost:3000/

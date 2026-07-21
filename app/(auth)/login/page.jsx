@@ -43,7 +43,7 @@ export default function LoginPage() {
         Use the email and password you registered with.
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+      <form onSubmit={handleSubmit} className="mt-8 space-y-5" suppressHydrationWarning>
         <Input
           id="email"
           label="Email"
