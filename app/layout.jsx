@@ -27,6 +27,9 @@ export const metadata = {
   title: 'Delight CICS — Cooperative Ledger',
   description:
     'The digital passbook for Delight Thrift & Credit Cooperative Society. Transparent contributions, loans, and membership records.',
+    icons: {
+    icon: '/logo/delightlogo.png', // The path relative to your public folder
+  },
 };
 
 export default function RootLayout({ children }) {

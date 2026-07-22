@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { BookMarked, Menu, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import Image from 'next/image';
 
 const LINKS = [
   { href: '#home', label: 'Home' },
@@ -18,7 +19,14 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 border-b border-rule bg-parchment-soft/95 backdrop-blur">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="#home" className="flex items-center gap-2">
-          <BookMarked className="h-5 w-5 text-cooperative" strokeWidth={2} />
+          <Image 
+          src="/logo/delightlogo.png" // or "/logo.svg"
+          alt="Delight MFB Logo" 
+          width={150} // Adjust based on your logo's actual proportions
+          height={40} 
+          className="h-10 w-auto object-contain" 
+          priority // Tells Next.js to load this immediately since it's above the fold
+        />
           <span className="font-display text-lg font-semibold tracking-tight text-ink">
             Delight <span className="text-cooperative">CICS</span>
           </span>
