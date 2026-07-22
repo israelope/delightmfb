@@ -11,6 +11,7 @@ import {
   ShieldHalf,
 } from 'lucide-react';
 import Navbar from '@/components/features/Navbar';
+import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import ImagePlaceholder from '@/components/ui/ImagePlaceholder';
 
@@ -130,7 +131,11 @@ export default function LandingPage() {
 
           {/* Hero image with floating stat cards */}
           <div className="relative mx-auto w-full max-w-md">
-            <ImagePlaceholder label="Add cooperative photo here" className="aspect-[4/3] w-full" />
+            <ImagePlaceholder 
+  src="/images/1.png" 
+  alt="Delight Cooperative Team"
+  className="aspect-[4/3] w-full" 
+/>
 
             <div className="absolute -right-4 -top-4 rounded-sm bg-parchment-soft px-4 py-3 shadow-lg sm:-right-6 sm:-top-6">
               <p className="font-body text-xs text-ink-muted">Members</p>
@@ -189,7 +194,11 @@ export default function LandingPage() {
       <section id="about" className="border-b border-rule">
         <div className="mx-auto max-w-6xl px-6 py-14 md:py-20">
           <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2">
-            <ImagePlaceholder label="Add cooperative meeting photo here" className="aspect-[4/3] w-full" />
+            <ImagePlaceholder 
+  src="/images/2.png" 
+  alt="Delight Cooperative Team"
+  className="aspect-[4/3] w-full" 
+/>
             <div>
               <p className="font-mono text-xs uppercase tracking-[0.2em] text-brass">About Delight MFB</p>
               <h2 className="mt-2 font-display text-3xl font-semibold text-ink">
