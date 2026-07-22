@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Check, Ban, RotateCcw } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Check, Ban, RotateCcw, Search, ShieldPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -14,6 +14,7 @@ export default function MemberManagement() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
 
   async function loadMembers() {
     setLoading(true);
@@ -38,13 +39,13 @@ export default function MemberManagement() {
     loadMembers();
   }, []);
 
-  async function updateStatus(id, status) {
+  async function updateProfile(id, fields) {
     setError('');
     setBusyId(id);
     const supabase = createClient();
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ status })
+      .update(fields)
       .eq('id', id);
 
     setBusyId(null);
@@ -55,17 +56,60 @@ export default function MemberManagement() {
     await loadMembers();
   }
 
-  const pendingCount = members.filter((m) => m.status === 'pending').length;
+  function handlePromote(member) {
+    const confirmed = window.confirm(
+      `Make ${member.full_name} an admin? They'll get full access to member management, contributions, and loans.`
+    );
+    if (confirmed) updateProfile(member.id, { role: 'admin' });
+  }
+
+  // Counts always reflect the full list, independent of the search filter.
+  const counts = useMemo(
+    () => ({
+      active: members.filter((m) => m.status === 'active').length,
+      pending: members.filter((m) => m.status === 'pending').length,
+      suspended: members.filter((m) => m.status === 'suspended').length,
+    }),
+    [members]
+  );
+
+  const filteredMembers = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return members;
+    return members.filter(
+      (m) =>
+        m.full_name?.toLowerCase().includes(term) ||
+        m.email?.toLowerCase().includes(term) ||
+        m.cooperative_id?.toLowerCase().includes(term)
+    );
+  }, [members, search]);
 
   return (
     <div className="mt-8 rounded-sm border border-rule bg-parchment-soft p-6">
-      <div>
-        <h2 className="font-display text-lg font-semibold text-ink">
-          Members{pendingCount > 0 && <span className="text-brass"> — {pendingCount} awaiting review</span>}
-        </h2>
-        <p className="mt-1 font-body text-sm text-ink-muted">
-          Approve against the physical records, or suspend an existing account.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="font-display text-lg font-semibold text-ink">Members</h2>
+          <p className="mt-1 font-body text-sm text-ink-muted">
+            Approve against the physical records, or suspend an existing account.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Badge variant="available">{counts.active} active</Badge>
+          <Badge variant="pending">{counts.pending} pending</Badge>
+          <Badge variant="suspended">{counts.suspended} suspended</Badge>
+        </div>
+      </div>
+
+      <div className="relative mt-5">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+        <input
+          type="text"
+          placeholder="Search by name, email, or cooperative ID…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-sm border border-rule bg-parchment py-2.5 pl-9 pr-3 font-body text-sm text-ink placeholder:text-ink-muted/60 focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+        />
       </div>
 
       {error && (
@@ -76,12 +120,14 @@ export default function MemberManagement() {
 
       {loading ? (
         <p className="mt-6 font-body text-sm text-ink-muted">Loading…</p>
-      ) : members.length === 0 ? (
-        <p className="mt-6 font-body text-sm text-ink-muted">No members yet.</p>
+      ) : filteredMembers.length === 0 ? (
+        <p className="mt-6 font-body text-sm text-ink-muted">
+          {members.length === 0 ? 'No members yet.' : 'No members match your search.'}
+        </p>
       ) : (
-        <ul className="mt-6 divide-y divide-rule">
-          {members.map((m) => (
-            <li key={m.id} className="flex items-center justify-between gap-4 py-3">
+        <ul className="mt-4 divide-y divide-rule">
+          {filteredMembers.map((m) => (
+            <li key={m.id} className="flex flex-wrap items-center justify-between gap-4 py-3">
               <div className="min-w-0">
                 <p className="truncate font-body text-sm font-medium text-ink">
                   {m.full_name}
@@ -95,7 +141,7 @@ export default function MemberManagement() {
                 <p className="truncate font-body text-xs text-ink-muted">{m.email}</p>
               </div>
 
-              <div className="flex shrink-0 items-center gap-3">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 <Badge variant={BADGE_VARIANT[m.status]}>{m.status}</Badge>
 
                 {m.status === 'pending' && (
@@ -103,7 +149,7 @@ export default function MemberManagement() {
                     variant="primary"
                     className="px-3 py-1.5 text-xs"
                     loading={busyId === m.id}
-                    onClick={() => updateStatus(m.id, 'active')}
+                    onClick={() => updateProfile(m.id, { status: 'active' })}
                   >
                     <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
                     Approve
@@ -111,15 +157,26 @@ export default function MemberManagement() {
                 )}
 
                 {m.status === 'active' && m.role !== 'admin' && (
-                  <Button
-                    variant="ghost"
-                    className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
-                    loading={busyId === m.id}
-                    onClick={() => updateStatus(m.id, 'suspended')}
-                  >
-                    <Ban className="h-3.5 w-3.5" strokeWidth={2.5} />
-                    Suspend
-                  </Button>
+                  <>
+                    <Button
+                      variant="secondary"
+                      className="px-3 py-1.5 text-xs"
+                      loading={busyId === m.id}
+                      onClick={() => handlePromote(m)}
+                    >
+                      <ShieldPlus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                      Make admin
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
+                      loading={busyId === m.id}
+                      onClick={() => updateProfile(m.id, { status: 'suspended' })}
+                    >
+                      <Ban className="h-3.5 w-3.5" strokeWidth={2.5} />
+                      Suspend
+                    </Button>
+                  </>
                 )}
 
                 {m.status === 'suspended' && (
@@ -127,7 +184,7 @@ export default function MemberManagement() {
                     variant="secondary"
                     className="px-3 py-1.5 text-xs"
                     loading={busyId === m.id}
-                    onClick={() => updateStatus(m.id, 'active')}
+                    onClick={() => updateProfile(m.id, { status: 'active' })}
                   >
                     <RotateCcw className="h-3.5 w-3.5" strokeWidth={2.5} />
                     Reactivate
