@@ -1,129 +1,127 @@
-# Delight MFB — Milestone 1
+Delight MFB - Cooperative Society Digital Ledger 🚀
 
-This matches what you've actually got installed: **Next.js 16** (middleware
-is now called `proxy.js`), **Tailwind v4** (CSS-based config, no
-`tailwind.config.js`), and **React 19**.
+Delight MFB is a specialized, ultra-secure CRM and digital ledger system built for traditional Thrift and Credit Cooperative Societies.
 
-Follow these in order. Don't skip ahead — each step depends on the one before it.
+It replaces physical passbooks, manual calculations, and physical guarantor signatures with a secure, automated digital dashboard, providing absolute transparency for members and powerful batch-management tools for administrators.
 
-## Step 1 — Install the one missing package
+🧠 Core Philosophy & Security Architecture
 
-Your `package.json` has `@supabase/supabase-js` but not `@supabase/ssr`,
-which is what lets Supabase read/write the login session via cookies in
-Next's Server Components and `proxy.js`. In your project folder:
+To eliminate the massive liabilities of PCI compliance, webhook failures, and financial theft, this platform processes zero real-world currency.
 
-```bash
-npm install @supabase/ssr
-```
+Air-Gapped Transactions: The app acts as a "digital twin" to the cooperative's physical bank account. Members make offline deposits; Admins log them digitally.
 
-That's the only new package needed for Milestone 1.
+$0 Authentication: Instead of paid SMS/Email OTPs, the system uses an Invite Code + Admin Approval workflow. New users must use an Admin-generated code to register and remain in a "Pending" locked state until an Admin physically verifies their identity and activates their account.
 
-## Step 2 — Create the Supabase project
+🛠 Tech Stack
 
-1. Go to [supabase.com](https://supabase.com) → New Project. Wait for it to finish provisioning (~2 min).
-2. **Settings → API** → copy the **Project URL** and the **anon public key**. You'll need both in Step 3.
-3. **Authentication → Providers → Email** → turn **OFF** "Confirm email".
-   This is important: members never give a real email address (explained in
-   Step 6), so if email confirmation is on, nobody will ever be able to log in.
-4. **SQL Editor** → paste in the entire contents of `supabase/schema.sql`
-   from this folder → Run. This creates all four tables, security policies,
-   and the trigger that validates invite codes.
+Framework: Next.js (App Router)
 
-## Step 3 — Add your environment variables
+Language: Standard JavaScript (.jsx)
 
-In your project's root folder, create a file called `.env.local` (copy
-`.env.local.example` from this folder if that's easier) with:
+Styling: Tailwind CSS
 
-```
-NEXT_PUBLIC_SUPABASE_URL=paste-your-project-url-here
-NEXT_PUBLIC_SUPABASE_ANON_KEY=paste-your-anon-key-here
-```
+Icons: Lucide React
 
-## Step 4 — Copy these files into your project
+Database & Auth: Supabase (PostgreSQL)
 
-Your `create-next-app` scaffold already has an `app/` folder with its own
-`page.js`, `layout.js`, and `globals.css` — **overwrite those** with the
-ones in this folder. Everything else here is new, so just copy the folders
-in as-is:
+Performance: Native Next.js SWC + React Compiler (enabled via next.config.mjs)
 
-```
-your-project/
+Utilities: browser-image-compression (for client-side avatar/receipt compression)
+
+✨ Key Features
+
+👨‍💼 Super Admin Command Center
+
+Global Overview: Aggregate statistics tracking Total Cooperative Liquidity, Active Loans, and Expected Monthly Influx.
+
+Invite Code Generator: Create single-use registration keys for new offline members.
+
+Member Management: Approve pending accounts, suspend defaulters, and edit profiles.
+
+Batch Contribution Logger: Spreadsheet-like UI to rapidly input monthly savings for multiple members.
+
+Loan Pipeline: Review requested loans, verify guarantor status, and manually mark funds as "Disbursed".
+
+👤 Member Transparency Portal
+
+Wallet / Balance Card: Real-time display of total logged contributions.
+
+Digital Passbook: Immutable table showing exact contribution history.
+
+Smart Loan Requests: Client-side eligibility rules engine (e.g., 2x savings limit) that automatically calculates borrowing power.
+
+Upcoming Deadlines: Visual alerts for upcoming monthly contribution dates or loan repayments.
+
+📂 Project Architecture
+
+The application utilizes Next.js Route Groups to separate authentication, member, and admin layouts while maintaining clean URLs.
+
 ├── app/
-│   ├── globals.css          ← overwrite
-│   ├── layout.jsx           ← overwrite (delete the old layout.js)
-│   ├── page.jsx             ← overwrite (delete the old page.js)
-│   ├── (auth)/               ← new folder
-│   ├── pending/               ← new folder
-│   ├── admin/                 ← new folder
-│   └── member/                 ← new folder
-├── components/                ← new folder
-├── lib/                       ← new folder
-├── supabase/                  ← new folder (just the .sql file, doesn't run itself)
-├── proxy.js                   ← new file, goes in the project ROOT (next to package.json)
-├── next.config.mjs            ← overwrite your existing one
-├── postcss.config.mjs         ← overwrite your existing one
-└── jsconfig.json              ← only add if you don't already have one
-```
+│   ├── (auth)/              # Public login & register (requires invite code)
+│   ├── (admin)/             # Protected admin portal & management tools
+│   ├── (member)/            # Protected user transparency dashboard
+│   ├── pending/             # Locked waiting room for unapproved users
+│   ├── layout.jsx           # Global layout & Context Providers
+│   └── page.jsx             # Public Landing Page
+├── components/
+│   ├── ui/                  # Reusable, dumb components (Buttons, Inputs, Modals)
+│   └── features/            # Complex, domain-specific widgets (TransactionTable, StatCard)
+├── lib/                     # Supabase client & utility functions
+└── middleware.js            # Route protection firewall (Intercepts unauthorized access)
 
-If your old `page.js`/`layout.js` were `.js` and mine are `.jsx`, delete the
-`.js` ones so there's no conflict (Next.js will error if both exist).
 
-## Step 5 — Run it
+🚀 Getting Started (Local Development)
 
-```bash
+1. Clone the repository
+
+git clone https://github.com/your-username/delightmfb.git
+cd delightmfb
+
+
+2. Install dependencies
+
+npm install
+
+
+3. Set up Supabase
+
+Create a new project on Supabase and create the following tables:
+
+profiles (id, full_name, cooperative_id, role, status, avatar_url)
+
+invite_codes (code, is_used, created_at)
+
+contributions (id, user_id, amount, date, month_logged)
+
+loans (id, user_id, principal, status, due_date)
+
+Note: Manually insert your first 'Admin' user directly into the profiles table to bypass the waiting room.
+
+4. Configure Environment Variables
+
+Create a .env.local file in the root directory and add your Supabase keys:
+
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+
+5. Run the development server
+
 npm run dev
-```
 
-Visit `http://localhost:3000`. You should see the landing page.
 
-## Step 6 — Create your first admin account
+Open http://localhost:3000 with your browser to see the result.
 
-There's no separate admin signup — you bootstrap it manually, once. In the
-Supabase **SQL Editor**:
+🚢 Deployment
 
-```sql
-insert into public.invite_codes (code) values ('COOP-FOUNDER');
-```
+The easiest way to deploy your Next.js app is to use the Vercel Platform.
 
-Then in the running app, go to `/register` and sign up with your own name,
-email, and password, using `COOP-FOUNDER` as the invite code. When it
-succeeds you'll be shown a Cooperative ID (e.g. `COOP-84210`) — that's just
-a reference number, not needed for login. Copy it, then back in the SQL
-Editor:
+Push your code to a GitHub repository.
 
-```sql
-update public.profiles
-set role = 'admin', status = 'active'
-where cooperative_id = 'COOP-84210'; -- use the ID you were actually shown
-```
+Import the repository into Vercel.
 
-Now sign in at `/login` with the email and password you just registered —
-you should land on `/admin/dashboard`.
+Add your NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to the Vercel Environment Variables settings.
 
-## How login works
+Deploy!
 
-Members register with full name, email, password, confirm password, and an
-invite code, and sign in afterward with just email + password — a normal
-login, so nobody gets locked out over a misspelled name. Email confirmation
-stays OFF (Step 2.3) since the spec avoids paid verification services; the
-invite code plus manual admin approval is what actually gates access. Each
-member is still assigned a Cooperative ID as a reference/account number
-(shown once at registration, and always visible on their dashboard) — it's
-just not used to log in.
-
-## If something breaks
-
-- **"Module not found: @supabase/ssr"** → you skipped Step 1.
-- **Login says invalid credentials right after registering** → check Step 2.3
-  (email confirmation must be OFF).
-- **"relation profiles does not exist"** → the SQL in Step 2.4 didn't run —
-  open the SQL Editor's output panel for the actual error and re-run it.
-- **Redirect loop between pages** → double check `proxy.js` is in your
-  project's *root* folder, not inside `app/`.
-
-## What's next
-
-`/admin/dashboard` and `/member/dashboard` are placeholders right now — say
-the word when you want Milestone 2 (invite code generator + member approval
-queue) and I'll build it against this same setup.
-
+Built with 💡 and ☕ for Delight MFB.
