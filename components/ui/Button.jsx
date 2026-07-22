@@ -6,6 +6,7 @@ const VARIANTS = {
     'bg-cooperative text-parchment-soft hover:bg-cooperative-dark disabled:bg-cooperative/50',
   secondary:
     'bg-transparent text-cooperative border border-cooperative hover:bg-cooperative/5 disabled:opacity-50',
+  brass: 'bg-brass-light text-ink hover:bg-brass disabled:bg-brass-light/50',
   ghost: 'bg-transparent text-ink hover:bg-ink/5 disabled:opacity-50',
 };
 
