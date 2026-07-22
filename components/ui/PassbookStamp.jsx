@@ -41,7 +41,7 @@ export default function PassbookStamp({ label = 'VERIFIED', state = 'live', clas
           className="font-mono text-[13px] font-semibold uppercase tracking-[0.25em]"
         >
           <textPath href="#stampCirclePath" startOffset="2%">
-            {label} • DELIGHT MFB •
+            {label} • DELIGHT CICS •
           </textPath>
         </text>
         <text

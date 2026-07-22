@@ -39,7 +39,7 @@ export default function AdminNav({ fullName }) {
         <Link href="/admin/dashboard" className="flex items-center gap-2">
           <BookMarked className="h-5 w-5 text-cooperative" strokeWidth={2} />
           <span className="font-display text-base font-semibold text-ink">
-            Delight <span className="text-cooperative">MFB</span>
+            Delight <span className="text-cooperative">CICS</span>
           </span>
         </Link>
         <button onClick={() => setOpen((o) => !o)} aria-label="Toggle menu" className="text-ink">
@@ -68,7 +68,7 @@ export default function AdminNav({ fullName }) {
           <Link href="/admin/dashboard" className="flex items-center gap-2 px-6 py-6">
             <BookMarked className="h-5 w-5 text-cooperative" strokeWidth={2} />
             <span className="font-display text-lg font-semibold text-ink">
-              Delight <span className="text-cooperative">MFB</span>
+              Delight <span className="text-cooperative">CICS</span>
             </span>
           </Link>
           <nav className="px-3">

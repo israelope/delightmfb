@@ -20,7 +20,7 @@ export default function Navbar() {
         <Link href="#home" className="flex items-center gap-2">
           <BookMarked className="h-5 w-5 text-cooperative" strokeWidth={2} />
           <span className="font-display text-lg font-semibold tracking-tight text-ink">
-            Delight <span className="text-cooperative">MFB</span>
+            Delight <span className="text-cooperative">CICS</span>
           </span>
         </Link>
 

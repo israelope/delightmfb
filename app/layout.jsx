@@ -24,7 +24,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: 'Delight MFB — Cooperative Ledger',
+  title: 'Delight CICS — Cooperative Ledger',
   description:
     'The digital passbook for Delight Thrift & Credit Cooperative Society. Transparent contributions, loans, and membership records.',
 };
