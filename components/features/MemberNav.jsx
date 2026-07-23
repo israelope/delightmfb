@@ -3,14 +3,40 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookMarked, HandCoins, Menu, X } from 'lucide-react';
+import {
+  BookMarked,
+  LayoutDashboard,
+  Wallet,
+  HandCoins,
+  Landmark,
+  ShoppingBasket,
+  Menu,
+  X,
+} from 'lucide-react';
 import SignOutButton from './SignOutButton';
-import Image from 'next/image';
 
 const NAV_ITEMS = [
-  { href: '/member/dashboard', label: 'Passbook', icon: BookMarked },
+  { href: '/member/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/member/passbook', label: 'Savings', icon: Wallet },
   { href: '/member/loans', label: 'Loans', icon: HandCoins },
 ];
+
+// Not built yet — shown disabled so the layout matches the target design,
+// without linking anywhere real. Wire these up once those pages exist.
+const COMING_SOON_ITEMS = [
+  { label: 'Land Investment', icon: Landmark },
+  { label: 'Products', icon: ShoppingBasket },
+];
+
+function initials(name) {
+  if (!name) return '';
+  return name
+    .split(' ')
+    .map((p) => p[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 function NavLink({ href, label, icon: Icon, active, onClick }) {
   return (
@@ -18,12 +44,40 @@ function NavLink({ href, label, icon: Icon, active, onClick }) {
       href={href}
       onClick={onClick}
       className={`flex items-center gap-2.5 rounded-sm px-3 py-2.5 font-body text-sm transition-colors ${
-        active ? 'bg-cooperative text-parchment-soft' : 'text-ink hover:bg-ink/5'
+        active
+          ? 'bg-parchment-soft text-cooperative-dark'
+          : 'text-parchment-soft/85 hover:bg-parchment-soft/10'
       }`}
     >
       <Icon className="h-4 w-4" strokeWidth={1.75} />
       {label}
     </Link>
+  );
+}
+
+function ComingSoonItem({ label, icon: Icon }) {
+  return (
+    <div className="flex cursor-not-allowed items-center justify-between rounded-sm px-3 py-2.5 text-parchment-soft/40">
+      <span className="flex items-center gap-2.5 font-body text-sm">
+        <Icon className="h-4 w-4" strokeWidth={1.75} />
+        {label}
+      </span>
+      <span className="font-mono text-[10px] uppercase tracking-wide">Soon</span>
+    </div>
+  );
+}
+
+function ProfileCard({ fullName, cooperativeId }) {
+  return (
+    <div className="flex items-center gap-3 rounded-sm bg-parchment-soft/10 px-3 py-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brass-light font-mono text-sm font-semibold text-ink">
+        {initials(fullName)}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate font-body text-sm font-medium text-parchment-soft">{fullName}</p>
+        <p className="font-mono text-xs text-parchment-soft/70">{cooperativeId}</p>
+      </div>
+    </div>
   );
 }
 
@@ -34,61 +88,60 @@ export default function MemberNav({ fullName, cooperativeId }) {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="flex items-center justify-between border-b border-rule bg-parchment-soft px-4 py-3 md:hidden">
+      <div className="flex items-center justify-between border-b border-rule bg-cooperative-dark px-4 py-3 md:hidden">
         <Link href="/member/dashboard" className="flex items-center gap-2">
-          <Image 
-                      src="/logo/delightlogo.png" // or "/logo.svg"
-                      alt="Delight MFB Logo" 
-                      width={150} // Adjust based on your logo's actual proportions
-                      height={40} 
-                      className="h-10 w-auto object-contain" 
-                      priority // Tells Next.js to load this immediately since it's above the fold
-                    />
-          <span className="font-display text-base font-semibold text-ink">
-            Delight <span className="text-cooperative">CICS</span>
+          <BookMarked className="h-5 w-5 text-brass-light" strokeWidth={2} />
+          <span className="font-display text-base font-semibold text-parchment-soft">
+            Delight <span className="text-brass-light">MFB</span>
           </span>
         </Link>
-        <button onClick={() => setOpen((o) => !o)} aria-label="Toggle menu" className="text-ink">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-label="Toggle menu"
+          className="text-parchment-soft"
+        >
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
       {open && (
-        <nav className="border-b border-rule bg-parchment-soft px-4 pb-4 md:hidden">
-          <ul className="space-y-1">
+        <nav className="border-b border-rule bg-cooperative-dark px-4 pb-4 md:hidden">
+          <div className="pt-3">
+            <ProfileCard fullName={fullName} cooperativeId={cooperativeId} />
+          </div>
+          <ul className="mt-3 space-y-1">
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
                 <NavLink {...item} active={pathname === item.href} onClick={() => setOpen(false)} />
               </li>
             ))}
           </ul>
-          <div className="mt-3 border-t border-rule pt-3">
-            <p className="truncate font-body text-sm text-ink-muted">{fullName}</p>
-            <p className="font-mono text-xs text-ink-muted">{cooperativeId}</p>
-            <div className="mt-2">
-              <SignOutButton />
-            </div>
+          <div className="mt-1 space-y-1 border-t border-parchment-soft/10 pt-2">
+            {COMING_SOON_ITEMS.map((item) => (
+              <ComingSoonItem key={item.label} {...item} />
+            ))}
+          </div>
+          <div className="mt-3 border-t border-parchment-soft/10 pt-3">
+            <SignOutButton tone="dark" />
           </div>
         </nav>
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:min-h-screen md:w-60 md:shrink-0 md:flex-col md:justify-between md:border-r md:border-rule md:bg-parchment-soft">
+      <aside className="hidden md:flex md:min-h-screen md:w-64 md:shrink-0 md:flex-col md:justify-between md:bg-cooperative-dark">
         <div>
           <Link href="/member/dashboard" className="flex items-center gap-2 px-6 py-6">
-            <Image 
-                      src="/logo/delightlogo.png" // or "/logo.svg"
-                      alt="Delight MFB Logo" 
-                      width={150} // Adjust based on your logo's actual proportions
-                      height={40} 
-                      className="h-10 w-auto object-contain" 
-                      priority // Tells Next.js to load this immediately since it's above the fold
-                    />
-            <span className="font-display text-lg font-semibold text-ink">
-              Delight <span className="text-cooperative">CICS</span>
+            <BookMarked className="h-5 w-5 text-brass-light" strokeWidth={2} />
+            <span className="font-display text-lg font-semibold text-parchment-soft">
+              Delight <span className="text-brass-light">MFB</span>
             </span>
           </Link>
-          <nav className="px-3">
+
+          <div className="px-3">
+            <ProfileCard fullName={fullName} cooperativeId={cooperativeId} />
+          </div>
+
+          <nav className="mt-4 px-3">
             <ul className="space-y-1">
               {NAV_ITEMS.map((item) => (
                 <li key={item.href}>
@@ -96,14 +149,16 @@ export default function MemberNav({ fullName, cooperativeId }) {
                 </li>
               ))}
             </ul>
+            <div className="mt-1 space-y-1 border-t border-parchment-soft/10 pt-2">
+              {COMING_SOON_ITEMS.map((item) => (
+                <ComingSoonItem key={item.label} {...item} />
+              ))}
+            </div>
           </nav>
         </div>
-        <div className="border-t border-rule px-6 py-5">
-          <p className="truncate font-body text-sm text-ink-muted">{fullName}</p>
-          <p className="font-mono text-xs text-ink-muted">{cooperativeId}</p>
-          <div className="mt-2">
-            <SignOutButton />
-          </div>
+
+        <div className="border-t border-parchment-soft/10 px-6 py-5">
+          <SignOutButton tone="dark" />
         </div>
       </aside>
     </>
