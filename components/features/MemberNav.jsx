@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import SignOutButton from './SignOutButton';
+import NotificationsBell from './NotificationsBell';
 
 const NAV_ITEMS = [
   { href: '/member/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -81,7 +82,7 @@ function ProfileCard({ fullName, cooperativeId }) {
   );
 }
 
-export default function MemberNav({ fullName, cooperativeId }) {
+export default function MemberNav({ userId, fullName, cooperativeId }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -95,13 +96,19 @@ export default function MemberNav({ fullName, cooperativeId }) {
             Delight <span className="text-brass-light">MFB</span>
           </span>
         </Link>
-        <button
-          onClick={() => setOpen((o) => !o)}
-          aria-label="Toggle menu"
-          className="text-parchment-soft"
-        >
-          {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
+        <div className="flex items-center gap-4">
+          <NotificationsBell userId={userId} tone="dark" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brass-light font-mono text-xs font-semibold text-ink">
+            {initials(fullName)}
+          </div>
+          <button
+            onClick={() => setOpen((o) => !o)}
+            aria-label="Toggle menu"
+            className="text-parchment-soft"
+          >
+            {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
       </div>
 
       {open && (

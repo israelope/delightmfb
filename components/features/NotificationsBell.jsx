@@ -7,7 +7,12 @@ import { timeAgo } from '@/lib/utils';
 
 const TYPE_ICON = { contribution: Wallet, loan: HandCoins, general: Bell };
 
-export default function NotificationsBell({ userId }) {
+const TONES = {
+  light: 'text-ink-muted hover:text-cooperative',
+  dark: 'text-parchment-soft/85 hover:text-brass-light',
+};
+
+export default function NotificationsBell({ userId, tone = 'light' }) {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -60,7 +65,7 @@ export default function NotificationsBell({ userId }) {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label="Notifications"
-        className="relative text-ink-muted hover:text-cooperative"
+        className={`relative ${TONES[tone]}`}
       >
         <Bell className="h-5 w-5" strokeWidth={1.75} />
         {unreadCount > 0 && (
@@ -71,7 +76,7 @@ export default function NotificationsBell({ userId }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-80 rounded-sm border border-rule bg-parchment-soft shadow-lg">
+        <div className="absolute right-0 z-50 mt-2 w-80 max-w-[85vw] rounded-sm border border-rule bg-parchment-soft shadow-lg">
           <div className="flex items-center justify-between border-b border-rule px-4 py-3">
             <p className="font-body text-sm font-semibold text-ink">Notifications</p>
             {unreadCount > 0 && (

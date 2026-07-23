@@ -18,7 +18,7 @@ export default async function MemberLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-parchment md:flex">
-      <MemberNav fullName={profile?.full_name} cooperativeId={profile?.cooperative_id} />
+      <MemberNav userId={user.id} fullName={profile?.full_name} cooperativeId={profile?.cooperative_id} />
       <div className="flex-1">
         <MemberTopbar userId={user.id} fullName={profile?.full_name} />
         <main className="px-6 py-8 md:py-10">
