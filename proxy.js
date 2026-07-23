@@ -1,9 +1,19 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
-const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/auth/confirm'];
+const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password'];
 
 export async function proxy(request) {
+  const path = request.nextUrl.pathname;
+
+  // Auth route handlers (password-reset token exchange) and API routes
+  // manage their own security — they must be reachable without an
+  // existing session, and shouldn't get HTML redirects injected into
+  // what should be a JSON response.
+  if (path.startsWith('/auth/') || path.startsWith('/api/')) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -29,7 +39,6 @@ export async function proxy(request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.includes(path);
 
   // Not signed in: block anything that isn't public.

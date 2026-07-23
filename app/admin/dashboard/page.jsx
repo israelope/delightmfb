@@ -1,6 +1,7 @@
 import AdminStatCards from '@/components/features/AdminStatCards';
 import CollectionsChart from '@/components/features/CollectionsChart';
 import AdminFundAllocationChart from '@/components/features/AdminFundAllocationChart';
+import LoanStatusChart from '@/components/features/LoanStatusChart';
 import PendingActionsCards from '@/components/features/PendingActionsCards';
 
 export default function AdminOverviewPage() {
@@ -19,7 +20,7 @@ export default function AdminOverviewPage() {
         <div className="rounded-sm border border-rule bg-parchment-soft p-6 lg:col-span-2">
           <h2 className="font-display text-lg font-semibold text-ink">Monthly Collections</h2>
           <p className="mt-1 font-body text-sm text-ink-muted">
-            Savings and loan repayments, last 6 months.
+            Savings, loan repayments, and loans disbursed — last 6 months.
           </p>
           <div className="mt-4">
             <CollectionsChart />
@@ -34,6 +35,16 @@ export default function AdminOverviewPage() {
           <div className="mt-4">
             <AdminFundAllocationChart />
           </div>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-sm border border-rule bg-parchment-soft p-6">
+        <h2 className="font-display text-lg font-semibold text-ink">Loan Status Breakdown</h2>
+        <p className="mt-1 font-body text-sm text-ink-muted">
+          Every loan ever requested, by current status.
+        </p>
+        <div className="mt-4">
+          <LoanStatusChart />
         </div>
       </div>
 

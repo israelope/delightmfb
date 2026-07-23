@@ -46,9 +46,14 @@ export default function CollectionsChart() {
       const months = lastNMonths(MONTHS_BACK);
       const earliestDate = `${months[0].key}-01`;
 
-      const [{ data: contributions }, { data: repayments }] = await Promise.all([
+      const [{ data: contributions }, { data: repayments }, { data: disbursedLoans }] = await Promise.all([
         supabase.from('contributions').select('amount, date').gte('date', earliestDate),
         supabase.from('loan_repayments').select('amount, date').gte('date', earliestDate),
+        supabase
+          .from('loans')
+          .select('principal, disbursed_at')
+          .not('disbursed_at', 'is', null)
+          .gte('disbursed_at', earliestDate),
       ]);
 
       function monthKey(dateStr) {
@@ -67,11 +72,18 @@ export default function CollectionsChart() {
         repayByMonth[k] = (repayByMonth[k] ?? 0) + Number(r.amount);
       });
 
+      const disbursedByMonth = {};
+      (disbursedLoans ?? []).forEach((l) => {
+        const k = monthKey(l.disbursed_at);
+        disbursedByMonth[k] = (disbursedByMonth[k] ?? 0) + Number(l.principal);
+      });
+
       setData(
         months.map((m) => ({
           label: m.label,
           Savings: contribByMonth[m.key] ?? 0,
           Repayments: repayByMonth[m.key] ?? 0,
+          'Loans Disbursed': disbursedByMonth[m.key] ?? 0,
         }))
       );
       setLoading(false);
@@ -98,6 +110,7 @@ export default function CollectionsChart() {
         <Legend wrapperStyle={{ fontSize: 12, fontFamily: 'var(--font-body)' }} />
         <Bar dataKey="Savings" fill="#0f5c3e" radius={[3, 3, 0, 0]} />
         <Bar dataKey="Repayments" fill="#2e6b58" radius={[3, 3, 0, 0]} />
+        <Bar dataKey="Loans Disbursed" fill="#b8862e" radius={[3, 3, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

@@ -1,7 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Check, X, HandCoins, CircleCheckBig, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Check,
+  X,
+  HandCoins,
+  Plus,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Search,
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatNaira, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
@@ -26,7 +35,7 @@ function defaultDueDate() {
 export default function LoanQueue() {
   const [loans, setLoans] = useState([]);
   const [profilesById, setProfilesById] = useState({});
-  const [repayments, setRepayments] = useState({}); // loan_id -> [rows]
+  const [repayments, setRepayments] = useState({});
   const [expanded, setExpanded] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
@@ -34,6 +43,8 @@ export default function LoanQueue() {
   const [dueDates, setDueDates] = useState({});
   const [rates, setRates] = useState({});
   const [repayAmounts, setRepayAmounts] = useState({});
+  const [search, setSearch] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
 
   async function loadLoans() {
     setLoading(true);
@@ -76,6 +87,25 @@ export default function LoanQueue() {
     setBusyId(null);
     if (updateError) {
       setError(updateError.message);
+      return;
+    }
+    await loadLoans();
+  }
+
+  async function deleteLoan(loan) {
+    const profile = profilesById[loan.user_id];
+    const confirmed = window.confirm(
+      `Permanently remove this ${loan.status} loan (${formatNaira(loan.principal)}) for ${profile?.full_name}? This also deletes its repayment history and cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setBusyId(loan.loan_id);
+    setError('');
+    const supabase = createClient();
+    const { error: deleteError } = await supabase.from('loans').delete().eq('id', loan.loan_id);
+    setBusyId(null);
+    if (deleteError) {
+      setError(deleteError.message);
       return;
     }
     await loadLoans();
@@ -130,7 +160,7 @@ export default function LoanQueue() {
   }
 
   async function deleteRepayment(loanId, repaymentId) {
-    const confirmed = window.confirm('Delete this repayment entry? This can\'t be undone.');
+    const confirmed = window.confirm("Delete this repayment entry? This can't be undone.");
     if (!confirmed) return;
     setBusyId(repaymentId);
     const supabase = createClient();
@@ -147,6 +177,25 @@ export default function LoanQueue() {
     await loadLoans();
   }
 
+  const filteredLoans = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return loans.filter((l) => {
+      const profile = profilesById[l.user_id];
+      const matchesTerm =
+        !term ||
+        profile?.full_name?.toLowerCase().includes(term) ||
+        profile?.cooperative_id?.toLowerCase().includes(term);
+
+      const matchesDate =
+        !dateFilter ||
+        [l.created_at, l.disbursed_at, l.updated_at].some(
+          (ts) => ts && ts.slice(0, 10) === dateFilter
+        );
+
+      return matchesTerm && matchesDate;
+    });
+  }, [loans, profilesById, search, dateFilter]);
+
   const openCount = loans.filter((l) => ['requested', 'approved'].includes(l.status)).length;
 
   return (
@@ -160,6 +209,31 @@ export default function LoanQueue() {
         </p>
       </div>
 
+      <div className="mt-5 flex flex-wrap gap-3">
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+          <input
+            type="text"
+            placeholder="Search by member name or cooperative ID…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-sm border border-rule bg-parchment py-2.5 pl-9 pr-3 font-body text-sm text-ink placeholder:text-ink-muted/60 focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+          />
+        </div>
+        <input
+          type="date"
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+          title="Filter by requested, disbursed, or cleared/rejected date"
+          className="rounded-sm border border-rule bg-parchment px-3 py-2.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+        />
+        {dateFilter && (
+          <Button variant="ghost" className="px-3 py-2 text-xs" onClick={() => setDateFilter('')}>
+            Clear date
+          </Button>
+        )}
+      </div>
+
       {error && (
         <p role="alert" className="mt-4 rounded-sm bg-brick/10 px-3 py-2 font-body text-sm text-brick">
           {error}
@@ -168,17 +242,20 @@ export default function LoanQueue() {
 
       {loading ? (
         <p className="mt-6 font-body text-sm text-ink-muted">Loading…</p>
-      ) : loans.length === 0 ? (
-        <p className="mt-6 font-body text-sm text-ink-muted">No loan requests yet.</p>
+      ) : filteredLoans.length === 0 ? (
+        <p className="mt-6 font-body text-sm text-ink-muted">
+          {loans.length === 0 ? 'No loan requests yet.' : 'No loans match your search.'}
+        </p>
       ) : (
         <ul className="mt-6 divide-y divide-rule">
-          {loans.map((l) => {
+          {filteredLoans.map((l) => {
             const profile = profilesById[l.user_id];
             const rate = rates[l.loan_id] ?? l.interest_rate ?? 0;
             const pct =
               l.total_repayable > 0
                 ? Math.min(100, Math.round((l.amount_repaid / l.total_repayable) * 100))
                 : 0;
+            const isResolved = l.status === 'cleared' || l.status === 'rejected';
 
             return (
               <li key={l.loan_id} className="py-3">
@@ -290,11 +367,30 @@ export default function LoanQueue() {
                         Repayments
                       </Button>
                     )}
+
+                    {isResolved && (
+                      <Button
+                        variant="ghost"
+                        className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
+                        loading={busyId === l.loan_id}
+                        onClick={() => deleteLoan(l)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        Remove from history
+                      </Button>
+                    )}
                   </div>
                 </div>
 
+                {/* Lifecycle dates */}
+                <p className="mt-1.5 font-mono text-[11px] text-ink-muted">
+                  Requested {formatDate(l.created_at)}
+                  {l.disbursed_at && <> · Disbursed {formatDate(l.disbursed_at)}</>}
+                  {isResolved && <> · {l.status === 'cleared' ? 'Cleared' : 'Rejected'} {formatDate(l.updated_at)}</>}
+                </p>
+
                 {l.status === 'disbursed' && (
-                  <div className="mt-2 flex items-center gap-3 pl-0">
+                  <div className="mt-2 flex items-center gap-3">
                     <ProgressBar value={pct} className="max-w-xs" />
                     <span className="shrink-0 font-mono text-xs text-ink-muted">
                       {formatNaira(l.amount_repaid)} / {formatNaira(l.total_repayable)} ({pct}%)

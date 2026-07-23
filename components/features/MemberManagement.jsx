@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Check, Ban, RotateCcw, Search, ShieldPlus } from 'lucide-react';
+import { Check, Ban, RotateCcw, Search, ShieldPlus, ShieldMinus, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -11,6 +11,7 @@ const BADGE_VARIANT = { pending: 'pending', active: 'available', suspended: 'sus
 
 export default function MemberManagement() {
   const [members, setMembers] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState('');
@@ -19,10 +20,16 @@ export default function MemberManagement() {
   async function loadMembers() {
     setLoading(true);
     const supabase = createClient();
-    const { data, error: fetchError } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, cooperative_id, role, status, created_at')
-      .order('created_at', { ascending: false });
+
+    const [{ data, error: fetchError }, { data: authData }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, full_name, email, cooperative_id, role, status, created_at')
+        .order('created_at', { ascending: false }),
+      supabase.auth.getUser(),
+    ]);
+
+    setCurrentUserId(authData?.user?.id ?? null);
 
     if (!fetchError) {
       const sorted = [...(data ?? [])].sort(
@@ -63,6 +70,47 @@ export default function MemberManagement() {
     if (confirmed) updateProfile(member.id, { role: 'admin' });
   }
 
+  function handleDemote(member) {
+    const confirmed = window.confirm(
+      `Demote ${member.full_name} back to a regular member? They'll lose admin access and see their own passbook instead.`
+    );
+    if (confirmed) updateProfile(member.id, { role: 'member' });
+  }
+
+  async function handleDelete(member) {
+    const typed = window.prompt(
+      `This permanently deletes ${member.full_name}'s account and ALL their records (contributions, loans, repayments). This cannot be undone.\n\nType their Cooperative ID to confirm: ${member.cooperative_id}`
+    );
+    if (typed === null) return; // cancelled
+    if (typed.trim() !== member.cooperative_id) {
+      setError('Confirmation text did not match — account was not deleted.');
+      return;
+    }
+
+    setError('');
+    setBusyId(member.id);
+    try {
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: member.id }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setError(body.error ?? 'Could not delete this account.');
+        setBusyId(null);
+        return;
+      }
+    } catch {
+      setError('Could not reach the server. Please try again.');
+      setBusyId(null);
+      return;
+    }
+
+    setBusyId(null);
+    await loadMembers();
+  }
+
   // Counts always reflect the full list, independent of the search filter.
   const counts = useMemo(
     () => ({
@@ -90,7 +138,7 @@ export default function MemberManagement() {
         <div>
           <h2 className="font-display text-lg font-semibold text-ink">Members</h2>
           <p className="mt-1 font-body text-sm text-ink-muted">
-            Approve against the physical records, or suspend an existing account.
+            Approve against the physical records, or manage an existing account.
           </p>
         </div>
 
@@ -126,73 +174,105 @@ export default function MemberManagement() {
         </p>
       ) : (
         <ul className="mt-4 divide-y divide-rule">
-          {filteredMembers.map((m) => (
-            <li key={m.id} className="flex flex-wrap items-center justify-between gap-4 py-3">
-              <div className="min-w-0">
-                <p className="truncate font-body text-sm font-medium text-ink">
-                  {m.full_name}
-                  {m.role === 'admin' && (
-                    <span className="ml-2 font-mono text-[11px] uppercase tracking-wide text-brass">
-                      admin
-                    </span>
+          {filteredMembers.map((m) => {
+            const isSelf = m.id === currentUserId;
+            return (
+              <li key={m.id} className="flex flex-wrap items-center justify-between gap-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate font-body text-sm font-medium text-ink">
+                    {m.full_name}
+                    {m.role === 'admin' && (
+                      <span className="ml-2 font-mono text-[11px] uppercase tracking-wide text-brass">
+                        admin
+                      </span>
+                    )}
+                    {isSelf && (
+                      <span className="ml-2 font-mono text-[11px] uppercase tracking-wide text-ink-muted">
+                        you
+                      </span>
+                    )}
+                  </p>
+                  <p className="font-mono text-xs text-ink-muted">{m.cooperative_id}</p>
+                  <p className="truncate font-body text-xs text-ink-muted">{m.email}</p>
+                </div>
+
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <Badge variant={BADGE_VARIANT[m.status]}>{m.status}</Badge>
+
+                  {m.status === 'pending' && (
+                    <Button
+                      variant="primary"
+                      className="px-3 py-1.5 text-xs"
+                      loading={busyId === m.id}
+                      onClick={() => updateProfile(m.id, { status: 'active' })}
+                    >
+                      <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                      Approve
+                    </Button>
                   )}
-                </p>
-                <p className="font-mono text-xs text-ink-muted">{m.cooperative_id}</p>
-                <p className="truncate font-body text-xs text-ink-muted">{m.email}</p>
-              </div>
 
-              <div className="flex shrink-0 flex-wrap items-center gap-2">
-                <Badge variant={BADGE_VARIANT[m.status]}>{m.status}</Badge>
+                  {m.status === 'active' && m.role !== 'admin' && (
+                    <>
+                      <Button
+                        variant="secondary"
+                        className="px-3 py-1.5 text-xs"
+                        loading={busyId === m.id}
+                        onClick={() => handlePromote(m)}
+                      >
+                        <ShieldPlus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        Make admin
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
+                        loading={busyId === m.id}
+                        onClick={() => updateProfile(m.id, { status: 'suspended' })}
+                      >
+                        <Ban className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        Suspend
+                      </Button>
+                    </>
+                  )}
 
-                {m.status === 'pending' && (
-                  <Button
-                    variant="primary"
-                    className="px-3 py-1.5 text-xs"
-                    loading={busyId === m.id}
-                    onClick={() => updateProfile(m.id, { status: 'active' })}
-                  >
-                    <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-                    Approve
-                  </Button>
-                )}
-
-                {m.status === 'active' && m.role !== 'admin' && (
-                  <>
+                  {m.status === 'active' && m.role === 'admin' && !isSelf && (
                     <Button
                       variant="secondary"
                       className="px-3 py-1.5 text-xs"
                       loading={busyId === m.id}
-                      onClick={() => handlePromote(m)}
+                      onClick={() => handleDemote(m)}
                     >
-                      <ShieldPlus className="h-3.5 w-3.5" strokeWidth={2.5} />
-                      Make admin
+                      <ShieldMinus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                      Demote to member
                     </Button>
+                  )}
+
+                  {m.status === 'suspended' && (
+                    <Button
+                      variant="secondary"
+                      className="px-3 py-1.5 text-xs"
+                      loading={busyId === m.id}
+                      onClick={() => updateProfile(m.id, { status: 'active' })}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" strokeWidth={2.5} />
+                      Reactivate
+                    </Button>
+                  )}
+
+                  {!isSelf && (
                     <Button
                       variant="ghost"
                       className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
                       loading={busyId === m.id}
-                      onClick={() => updateProfile(m.id, { status: 'suspended' })}
+                      onClick={() => handleDelete(m)}
                     >
-                      <Ban className="h-3.5 w-3.5" strokeWidth={2.5} />
-                      Suspend
+                      <Trash2 className="h-3.5 w-3.5" strokeWidth={2.5} />
+                      Delete
                     </Button>
-                  </>
-                )}
-
-                {m.status === 'suspended' && (
-                  <Button
-                    variant="secondary"
-                    className="px-3 py-1.5 text-xs"
-                    loading={busyId === m.id}
-                    onClick={() => updateProfile(m.id, { status: 'active' })}
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" strokeWidth={2.5} />
-                    Reactivate
-                  </Button>
-                )}
-              </div>
-            </li>
-          ))}
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

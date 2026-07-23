@@ -203,6 +203,19 @@ export default function LoanPortal({ userId }) {
                               {l.due_date && ` · Due ${new Date(l.due_date).toLocaleDateString('en-NG')}`}
                             </p>
                           )}
+                          <p className="mt-1 font-mono text-[11px] text-ink-muted">
+                            Requested {new Date(l.created_at).toLocaleDateString('en-NG')}
+                            {l.disbursed_at && (
+                              <> · Disbursed {new Date(l.disbursed_at).toLocaleDateString('en-NG')}</>
+                            )}
+                            {(l.status === 'cleared' || l.status === 'rejected') && (
+                              <>
+                                {' '}
+                                · {l.status === 'cleared' ? 'Cleared' : 'Rejected'}{' '}
+                                {new Date(l.updated_at).toLocaleDateString('en-NG')}
+                              </>
+                            )}
+                          </p>
                         </div>
                         <Badge variant={LOAN_BADGE_VARIANT[l.status]}>{l.status}</Badge>
                       </div>
