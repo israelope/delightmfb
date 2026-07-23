@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { formatNaira } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import ProgressBar from '@/components/ui/ProgressBar';
 
 const ELIGIBILITY_MULTIPLIER = 2;
 const OPEN_STATUSES = ['requested', 'approved', 'disbursed'];
@@ -19,6 +20,7 @@ const LOAN_BADGE_VARIANT = {
 
 export default function LoanPortal({ userId }) {
   const [totalSaved, setTotalSaved] = useState(0);
+  const [interestRate, setInterestRate] = useState(0);
   const [loans, setLoans] = useState([]);
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(true);
@@ -31,15 +33,19 @@ export default function LoanPortal({ userId }) {
     setError('');
     const supabase = createClient();
 
-    const [{ data: contributions, error: contribError }, { data: loanData, error: loanError }] =
-      await Promise.all([
-        supabase.from('contributions').select('amount').eq('user_id', userId),
-        supabase
-          .from('loans')
-          .select('id, principal, status, due_date, created_at')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false }),
-      ]);
+    const [
+      { data: contributions, error: contribError },
+      { data: loanData, error: loanError },
+      { data: settings },
+    ] = await Promise.all([
+      supabase.from('contributions').select('amount').eq('user_id', userId),
+      supabase
+        .from('loan_balances')
+        .select('*')
+        .eq('user_id', userId)
+        .order('loan_id', { ascending: false }),
+      supabase.from('cooperative_settings').select('default_interest_rate').eq('id', 1).single(),
+    ]);
 
     if (contribError || loanError) {
       setError((contribError ?? loanError).message);
@@ -49,6 +55,7 @@ export default function LoanPortal({ userId }) {
 
     setTotalSaved((contributions ?? []).reduce((sum, c) => sum + Number(c.amount), 0));
     setLoans(loanData ?? []);
+    setInterestRate(settings?.default_interest_rate ?? 0);
     setLoading(false);
   }
 
@@ -61,6 +68,7 @@ export default function LoanPortal({ userId }) {
   const hasOpenLoan = loans.some((l) => OPEN_STATUSES.includes(l.status));
   const requestedAmount = Number(amount);
   const isValidAmount = requestedAmount > 0 && requestedAmount <= limit;
+  const previewTotal = requestedAmount > 0 ? requestedAmount * (1 + interestRate / 100) : 0;
 
   async function handleRequest(e) {
     e.preventDefault();
@@ -89,7 +97,7 @@ export default function LoanPortal({ userId }) {
   }
 
   return (
-    <div className=" rounded-sm border border-rule bg-parchment-soft p-6">
+    <div className="rounded-sm border border-rule bg-parchment-soft p-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-lg font-semibold text-ink">Loans</h2>
@@ -112,7 +120,8 @@ export default function LoanPortal({ userId }) {
               {formatNaira(limit)}
             </p>
             <p className="mt-1 font-body text-xs text-ink-muted">
-              Based on {formatNaira(totalSaved)} in total contributions.
+              Based on {formatNaira(totalSaved)} in total contributions. Current interest rate:{' '}
+              {interestRate}%.
             </p>
           </div>
 
@@ -152,15 +161,16 @@ export default function LoanPortal({ userId }) {
                   className="w-44 rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                 />
               </label>
-              <Button
-                type="submit"
-                variant="primary"
-                loading={submitting}
-                disabled={!isValidAmount}
-              >
+              <Button type="submit" variant="primary" loading={submitting} disabled={!isValidAmount}>
                 <Send className="h-4 w-4" strokeWidth={2.25} />
                 Request loan
               </Button>
+              {requestedAmount > 0 && (
+                <p className="w-full font-body text-xs text-ink-muted">
+                  With a {interestRate}% interest rate, you'd repay a total of{' '}
+                  <span className="font-medium text-ink">{formatNaira(previewTotal)}</span>.
+                </p>
+              )}
             </form>
           )}
 
@@ -169,25 +179,45 @@ export default function LoanPortal({ userId }) {
               <p className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
                 Loan history
               </p>
-              <ul className="mt-3 space-y-2">
-                {loans.map((l) => (
-                  <li
-                    key={l.id}
-                    className="flex items-center justify-between rounded-sm border border-rule bg-parchment px-3.5 py-2.5"
-                  >
-                    <div>
-                      <p className="tabular font-mono text-sm text-ink">
-                        {formatNaira(l.principal)}
-                      </p>
-                      {l.due_date && (
-                        <p className="font-body text-xs text-ink-muted">
-                          Due {new Date(l.due_date).toLocaleDateString('en-NG')}
-                        </p>
+              <ul className="mt-3 space-y-3">
+                {loans.map((l) => {
+                  const pct =
+                    l.total_repayable > 0
+                      ? Math.min(100, Math.round((l.amount_repaid / l.total_repayable) * 100))
+                      : 0;
+                  return (
+                    <li key={l.loan_id} className="rounded-sm border border-rule bg-parchment px-3.5 py-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="tabular font-mono text-sm text-ink">
+                            {formatNaira(l.principal)}
+                            {l.interest_rate > 0 && (
+                              <span className="ml-1.5 font-body text-xs text-ink-muted">
+                                + {l.interest_rate}% interest
+                              </span>
+                            )}
+                          </p>
+                          {l.total_repayable && (
+                            <p className="font-body text-xs text-ink-muted">
+                              Total repayable: {formatNaira(l.total_repayable)}
+                              {l.due_date && ` · Due ${new Date(l.due_date).toLocaleDateString('en-NG')}`}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant={LOAN_BADGE_VARIANT[l.status]}>{l.status}</Badge>
+                      </div>
+
+                      {l.status === 'disbursed' && (
+                        <div className="mt-3">
+                          <ProgressBar value={pct} />
+                          <p className="mt-1.5 font-mono text-xs text-ink-muted">
+                            {formatNaira(l.amount_repaid)} repaid of {formatNaira(l.total_repayable)} ({pct}%)
+                          </p>
+                        </div>
                       )}
-                    </div>
-                    <Badge variant={LOAN_BADGE_VARIANT[l.status]}>{l.status}</Badge>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check, X, HandCoins, CircleCheckBig } from 'lucide-react';
+import { Check, X, HandCoins, CircleCheckBig, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { formatNaira } from '@/lib/utils';
+import { formatNaira, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import ProgressBar from '@/components/ui/ProgressBar';
 
 const STATUS_ORDER = { requested: 0, approved: 1, disbursed: 2, cleared: 3, rejected: 4 };
 const BADGE_VARIANT = {
@@ -24,28 +25,42 @@ function defaultDueDate() {
 
 export default function LoanQueue() {
   const [loans, setLoans] = useState([]);
+  const [profilesById, setProfilesById] = useState({});
+  const [repayments, setRepayments] = useState({}); // loan_id -> [rows]
+  const [expanded, setExpanded] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState('');
   const [dueDates, setDueDates] = useState({});
+  const [rates, setRates] = useState({});
+  const [repayAmounts, setRepayAmounts] = useState({});
 
   async function loadLoans() {
     setLoading(true);
     setError('');
     const supabase = createClient();
-    const { data, error: fetchError } = await supabase
-      .from('loans')
-      .select('id, principal, status, due_date, created_at, profiles(full_name, cooperative_id)')
-      .order('created_at', { ascending: false });
+
+    const [{ data: balances, error: fetchError }, { data: profiles }] = await Promise.all([
+      supabase.from('loan_balances').select('*'),
+      supabase.from('profiles').select('id, full_name, cooperative_id'),
+    ]);
 
     if (fetchError) {
       setError(fetchError.message);
-    } else {
-      const sorted = [...(data ?? [])].sort(
-        (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
-      );
-      setLoans(sorted);
+      setLoading(false);
+      return;
     }
+
+    const profileMap = {};
+    (profiles ?? []).forEach((p) => {
+      profileMap[p.id] = p;
+    });
+    setProfilesById(profileMap);
+
+    const sorted = [...(balances ?? [])].sort(
+      (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
+    );
+    setLoans(sorted);
     setLoading(false);
   }
 
@@ -66,16 +81,82 @@ export default function LoanQueue() {
     await loadLoans();
   }
 
+  async function loadRepayments(loanId) {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from('loan_repayments')
+      .select('id, amount, date, created_at')
+      .eq('loan_id', loanId)
+      .order('date', { ascending: false });
+    setRepayments((prev) => ({ ...prev, [loanId]: data ?? [] }));
+  }
+
+  async function toggleExpand(loanId) {
+    if (expanded === loanId) {
+      setExpanded(null);
+      return;
+    }
+    setExpanded(loanId);
+    if (!repayments[loanId]) await loadRepayments(loanId);
+  }
+
+  async function logRepayment(loan) {
+    const amount = Number(repayAmounts[loan.loan_id]);
+    if (!amount || amount <= 0) {
+      setError('Enter a valid repayment amount.');
+      return;
+    }
+    setBusyId(loan.loan_id);
+    setError('');
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const { error: insertError } = await supabase.from('loan_repayments').insert({
+      loan_id: loan.loan_id,
+      amount,
+      logged_by: user?.id,
+    });
+
+    setBusyId(null);
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+    setRepayAmounts((prev) => ({ ...prev, [loan.loan_id]: '' }));
+    await loadRepayments(loan.loan_id);
+    await loadLoans();
+  }
+
+  async function deleteRepayment(loanId, repaymentId) {
+    const confirmed = window.confirm('Delete this repayment entry? This can\'t be undone.');
+    if (!confirmed) return;
+    setBusyId(repaymentId);
+    const supabase = createClient();
+    const { error: deleteError } = await supabase
+      .from('loan_repayments')
+      .delete()
+      .eq('id', repaymentId);
+    setBusyId(null);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    await loadRepayments(loanId);
+    await loadLoans();
+  }
+
   const openCount = loans.filter((l) => ['requested', 'approved'].includes(l.status)).length;
 
   return (
-    <div className=" rounded-sm border border-rule bg-parchment-soft p-6">
+    <div className="rounded-sm border border-rule bg-parchment-soft p-6">
       <div>
         <h2 className="font-display text-lg font-semibold text-ink">
           Loans{openCount > 0 && <span className="text-brass"> — {openCount} need action</span>}
         </h2>
         <p className="mt-1 font-body text-sm text-ink-muted">
-          Approve requests, disburse funds, and mark loans cleared once repaid.
+          Approve requests, disburse funds, and log repayments as they come in.
         </p>
       </div>
 
@@ -91,84 +172,203 @@ export default function LoanQueue() {
         <p className="mt-6 font-body text-sm text-ink-muted">No loan requests yet.</p>
       ) : (
         <ul className="mt-6 divide-y divide-rule">
-          {loans.map((l) => (
-            <li key={l.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-              <div className="min-w-0">
-                <p className="truncate font-body text-sm font-medium text-ink">
-                  {l.profiles?.full_name}
-                </p>
-                <p className="font-mono text-xs text-ink-muted">{l.profiles?.cooperative_id}</p>
-              </div>
+          {loans.map((l) => {
+            const profile = profilesById[l.user_id];
+            const rate = rates[l.loan_id] ?? l.interest_rate ?? 0;
+            const pct =
+              l.total_repayable > 0
+                ? Math.min(100, Math.round((l.amount_repaid / l.total_repayable) * 100))
+                : 0;
 
-              <div className="tabular font-mono text-sm text-ink">{formatNaira(l.principal)}</div>
+            return (
+              <li key={l.loan_id} className="py-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-body text-sm font-medium text-ink">
+                      {profile?.full_name}
+                    </p>
+                    <p className="font-mono text-xs text-ink-muted">{profile?.cooperative_id}</p>
+                  </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={BADGE_VARIANT[l.status]}>{l.status}</Badge>
+                  <div className="tabular font-mono text-sm text-ink">
+                    {formatNaira(l.principal)}
+                  </div>
 
-                {l.status === 'requested' && (
-                  <>
-                    <Button
-                      variant="primary"
-                      className="px-3 py-1.5 text-xs"
-                      loading={busyId === l.id}
-                      onClick={() => updateLoan(l.id, { status: 'approved' })}
-                    >
-                      <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-                      Approve
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
-                      loading={busyId === l.id}
-                      onClick={() => updateLoan(l.id, { status: 'rejected' })}
-                    >
-                      <X className="h-3.5 w-3.5" strokeWidth={2.5} />
-                      Reject
-                    </Button>
-                  </>
-                )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={BADGE_VARIANT[l.status]}>{l.status}</Badge>
 
-                {l.status === 'approved' && (
-                  <>
-                    <input
-                      type="date"
-                      value={dueDates[l.id] ?? defaultDueDate()}
-                      onChange={(e) =>
-                        setDueDates((d) => ({ ...d, [l.id]: e.target.value }))
-                      }
-                      className="rounded-sm border border-rule bg-parchment px-2 py-1.5 font-mono text-xs text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
-                    />
-                    <Button
-                      variant="primary"
-                      className="px-3 py-1.5 text-xs"
-                      loading={busyId === l.id}
-                      onClick={() =>
-                        updateLoan(l.id, {
-                          status: 'disbursed',
-                          due_date: dueDates[l.id] ?? defaultDueDate(),
-                        })
-                      }
-                    >
-                      <HandCoins className="h-3.5 w-3.5" strokeWidth={2.5} />
-                      Disburse
-                    </Button>
-                  </>
-                )}
+                    {l.status === 'requested' && (
+                      <>
+                        <label className="flex items-center gap-1.5">
+                          <span className="font-body text-xs text-ink-muted">Interest %</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={rate}
+                            onChange={(e) =>
+                              setRates((prev) => ({ ...prev, [l.loan_id]: e.target.value }))
+                            }
+                            className="w-16 rounded-sm border border-rule bg-parchment px-2 py-1.5 font-mono text-xs text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+                          />
+                        </label>
+                        <Button
+                          variant="primary"
+                          className="px-3 py-1.5 text-xs"
+                          loading={busyId === l.loan_id}
+                          onClick={() =>
+                            updateLoan(l.loan_id, { status: 'approved', interest_rate: Number(rate) })
+                          }
+                        >
+                          <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          Approve
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
+                          loading={busyId === l.loan_id}
+                          onClick={() => updateLoan(l.loan_id, { status: 'rejected' })}
+                        >
+                          <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          Reject
+                        </Button>
+                      </>
+                    )}
+
+                    {l.status === 'approved' && (
+                      <>
+                        <label className="flex items-center gap-1.5">
+                          <span className="font-body text-xs text-ink-muted">Interest %</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={rate}
+                            onChange={(e) =>
+                              setRates((prev) => ({ ...prev, [l.loan_id]: e.target.value }))
+                            }
+                            className="w-16 rounded-sm border border-rule bg-parchment px-2 py-1.5 font-mono text-xs text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+                          />
+                        </label>
+                        <input
+                          type="date"
+                          value={dueDates[l.loan_id] ?? defaultDueDate()}
+                          onChange={(e) =>
+                            setDueDates((d) => ({ ...d, [l.loan_id]: e.target.value }))
+                          }
+                          className="rounded-sm border border-rule bg-parchment px-2 py-1.5 font-mono text-xs text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+                        />
+                        <Button
+                          variant="primary"
+                          className="px-3 py-1.5 text-xs"
+                          loading={busyId === l.loan_id}
+                          onClick={() =>
+                            updateLoan(l.loan_id, {
+                              status: 'disbursed',
+                              interest_rate: Number(rate),
+                              due_date: dueDates[l.loan_id] ?? defaultDueDate(),
+                            })
+                          }
+                        >
+                          <HandCoins className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          Disburse
+                        </Button>
+                      </>
+                    )}
+
+                    {l.status === 'disbursed' && (
+                      <Button
+                        variant="secondary"
+                        className="px-3 py-1.5 text-xs"
+                        onClick={() => toggleExpand(l.loan_id)}
+                      >
+                        {expanded === l.loan_id ? (
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        )}
+                        Repayments
+                      </Button>
+                    )}
+                  </div>
+                </div>
 
                 {l.status === 'disbursed' && (
-                  <Button
-                    variant="secondary"
-                    className="px-3 py-1.5 text-xs"
-                    loading={busyId === l.id}
-                    onClick={() => updateLoan(l.id, { status: 'cleared' })}
-                  >
-                    <CircleCheckBig className="h-3.5 w-3.5" strokeWidth={2.5} />
-                    Mark cleared
-                  </Button>
+                  <div className="mt-2 flex items-center gap-3 pl-0">
+                    <ProgressBar value={pct} className="max-w-xs" />
+                    <span className="shrink-0 font-mono text-xs text-ink-muted">
+                      {formatNaira(l.amount_repaid)} / {formatNaira(l.total_repayable)} ({pct}%)
+                    </span>
+                  </div>
                 )}
-              </div>
-            </li>
-          ))}
+
+                {expanded === l.loan_id && (
+                  <div className="mt-3 rounded-sm border border-rule bg-parchment p-4">
+                    <div className="flex flex-wrap items-end gap-3">
+                      <label className="flex flex-col gap-1.5">
+                        <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
+                          Log a repayment
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="₦0.00"
+                          value={repayAmounts[l.loan_id] ?? ''}
+                          onChange={(e) =>
+                            setRepayAmounts((prev) => ({ ...prev, [l.loan_id]: e.target.value }))
+                          }
+                          className="w-36 rounded-sm border border-rule bg-parchment-soft px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+                        />
+                      </label>
+                      <Button
+                        variant="primary"
+                        className="px-3 py-1.5 text-xs"
+                        loading={busyId === l.loan_id}
+                        onClick={() => logRepayment(l)}
+                      >
+                        <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        Log repayment
+                      </Button>
+                    </div>
+
+                    <div className="mt-4">
+                      {!repayments[l.loan_id] ? (
+                        <p className="font-body text-xs text-ink-muted">Loading…</p>
+                      ) : repayments[l.loan_id].length === 0 ? (
+                        <p className="font-body text-xs text-ink-muted">No repayments logged yet.</p>
+                      ) : (
+                        <ul className="space-y-1.5">
+                          {repayments[l.loan_id].map((r) => (
+                            <li
+                              key={r.id}
+                              className="flex items-center justify-between rounded-sm bg-parchment-soft px-3 py-2"
+                            >
+                              <span className="font-body text-xs text-ink-muted">
+                                {formatDate(r.date)}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="tabular font-mono text-sm text-ink">
+                                  {formatNaira(r.amount)}
+                                </span>
+                                <button
+                                  onClick={() => deleteRepayment(l.loan_id, r.id)}
+                                  className="text-ink-muted hover:text-brick"
+                                  aria-label="Delete repayment"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

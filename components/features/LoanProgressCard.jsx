@@ -8,11 +8,11 @@ export default async function LoanProgressCard({ userId }) {
   const supabase = await createClient();
 
   const { data: loan } = await supabase
-    .from('loans')
-    .select('principal, status, due_date, disbursed_at')
+    .from('loan_balances')
+    .select('*')
     .eq('user_id', userId)
     .eq('status', 'disbursed')
-    .order('created_at', { ascending: false })
+    .order('loan_id', { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -31,15 +31,10 @@ export default async function LoanProgressCard({ userId }) {
     );
   }
 
-  let percentElapsed = 0;
-  if (loan.disbursed_at && loan.due_date) {
-    const start = new Date(loan.disbursed_at).getTime();
-    const end = new Date(loan.due_date).getTime();
-    const now = Date.now();
-    percentElapsed = end > start ? Math.round(((now - start) / (end - start)) * 100) : 0;
-    percentElapsed = Math.min(100, Math.max(0, percentElapsed));
-  }
-
+  const pct =
+    loan.total_repayable > 0
+      ? Math.min(100, Math.round((loan.amount_repaid / loan.total_repayable) * 100))
+      : 0;
   const isOverdue = loan.due_date && new Date(loan.due_date) < new Date();
 
   return (
@@ -47,20 +42,22 @@ export default async function LoanProgressCard({ userId }) {
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg font-semibold text-ink">Loan repayment</h2>
         <Badge variant={isOverdue ? 'suspended' : 'available'}>
-          {isOverdue ? 'overdue' : 'disbursed'}
+          {isOverdue ? 'overdue' : 'on track'}
         </Badge>
       </div>
 
       <p className="tabular mt-3 font-display text-2xl font-semibold text-ink">
-        {formatNaira(loan.principal)}
+        {formatNaira(loan.total_repayable)}
       </p>
       <p className="mt-1 font-body text-xs text-ink-muted">
-        Due {formatDate(loan.due_date)} — based on time elapsed since disbursement, not amount
-        repaid.
+        {formatNaira(loan.principal)} borrowed at {loan.interest_rate}% interest · Due{' '}
+        {formatDate(loan.due_date)}
       </p>
 
-      <ProgressBar value={percentElapsed} className="mt-4" />
-      <p className="mt-1.5 font-mono text-xs text-ink-muted">{percentElapsed}% of loan term elapsed</p>
+      <ProgressBar value={pct} className="mt-4" />
+      <p className="mt-1.5 font-mono text-xs text-ink-muted">
+        {formatNaira(loan.amount_repaid)} repaid of {formatNaira(loan.total_repayable)} ({pct}%)
+      </p>
     </div>
   );
 }
