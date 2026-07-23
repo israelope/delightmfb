@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import SignOutButton from './SignOutButton';
 import NotificationsBell from './NotificationsBell';
+import Image from 'next/image';
 
 const NAV_ITEMS = [
   { href: '/member/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -91,7 +92,14 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
       {/* Mobile top bar */}
       <div className="flex items-center justify-between border-b border-rule bg-cooperative-dark px-4 py-3 md:hidden">
         <Link href="/member/dashboard" className="flex items-center gap-2">
-          <BookMarked className="h-5 w-5 text-brass-light" strokeWidth={2} />
+          <Image 
+          src="/logo/delightlogo.png" // or "/logo.svg"
+          alt="Delight MFB Logo" 
+          width={150} // Adjust based on your logo's actual proportions
+          height={40} 
+          className="h-10 w-auto object-contain" 
+          priority // Tells Next.js to load this immediately since it's above the fold
+        />
           <span className="font-display text-base font-semibold text-parchment-soft">
             Delight <span className="text-brass-light">MFB</span>
           </span>
@@ -135,10 +143,17 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:min-h-screen md:w-64 md:shrink-0 md:flex-col md:justify-between md:bg-cooperative-dark">
+      <aside className="hidden md:flex  md:min-h-screen md:w-64 md:shrink-0 md:flex-col md:justify-between md:bg-cooperative-dark">
         <div>
           <Link href="/member/dashboard" className="flex items-center gap-2 px-6 py-6">
-            <BookMarked className="h-5 w-5 text-brass-light" strokeWidth={2} />
+            <Image 
+          src="/logo/delightlogo.png" // or "/logo.svg"
+          alt="Delight MFB Logo" 
+          width={150} // Adjust based on your logo's actual proportions
+          height={40} 
+          className="h-10 w-auto object-contain" 
+          priority // Tells Next.js to load this immediately since it's above the fold
+        />
             <span className="font-display text-lg font-semibold text-parchment-soft">
               Delight <span className="text-brass-light">MFB</span>
             </span>
