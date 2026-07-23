@@ -1,44 +1,38 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { formatNaira } from '@/lib/utils';
 import Badge from '@/components/ui/Badge';
 
 export default function PassbookLedgerTable({ rows }) {
-  const [search, setSearch] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
 
   const filteredRows = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return rows;
-    return rows.filter((c) => {
-      const monthName = new Date(c.date).toLocaleDateString('en-NG', {
-        month: 'long',
-        year: 'numeric',
-      });
-      return (
-        c.month_logged?.toLowerCase().includes(term) ||
-        monthName.toLowerCase().includes(term)
-      );
-    });
-  }, [rows, search]);
+    if (!selectedMonth) return rows;
+    
+    // The native month input always returns the value as "YYYY-MM" (e.g., "2022-01").
+    // We can just directly match it against your database's month_logged string!
+    return rows.filter((c) => c.month_logged === selectedMonth);
+  }, [rows, selectedMonth]);
 
   return (
     <div>
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+        <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
         <input
-          type="text"
-          placeholder="Search by month, e.g. July or 2026-07…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-sm border border-rule bg-parchment py-2.5 pl-9 pr-3 font-body text-sm text-ink placeholder:text-ink-muted/60 focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+          type="month"
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className="w-full rounded-sm border border-rule bg-parchment py-2.5 pl-9 pr-3 font-body text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
         />
       </div>
 
       {filteredRows.length === 0 ? (
         <p className="mt-6 font-body text-sm text-ink-muted">
-          {rows.length === 0 ? 'Nothing logged yet — check back after your next contribution.' : 'No contributions match that search.'}
+          {rows.length === 0 
+            ? 'Nothing logged yet — check back after your next contribution.' 
+            : 'No contributions found for that specific month.'}
         </p>
       ) : (
         <div className="mt-4 overflow-x-auto">
