@@ -1,7 +1,7 @@
 import { BookMarked } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { formatNaira } from '@/lib/utils';
-import Badge from '@/components/ui/Badge';
+import PassbookLedgerTable from '@/components/features/PassbookLedgerTable';
 
 export default async function Passbook({ userId }) {
   const supabase = await createClient();
@@ -24,7 +24,7 @@ export default async function Passbook({ userId }) {
   const totalSaved = rows.reduce((sum, c) => sum + Number(c.amount), 0);
 
   return (
-    <div className="mt-8 space-y-6">
+    <div className="space-y-6">
       {/* Wallet card */}
       <div className="rounded-sm border border-rule bg-cooperative p-6 text-parchment-soft">
         <div className="flex items-center justify-between">
@@ -45,45 +45,9 @@ export default async function Passbook({ userId }) {
         <p className="mt-1 font-body text-sm text-ink-muted">
           Every contribution your admin has logged on your behalf.
         </p>
-
-        {rows.length === 0 ? (
-          <p className="mt-6 font-body text-sm text-ink-muted">
-            Nothing logged yet — check back after your next contribution.
-          </p>
-        ) : (
-          <div className=" overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-rule text-xs uppercase tracking-wider text-ink-muted">
-                  <th className="pb-2 font-body font-medium">Date</th>
-                  <th className="pb-2 font-body font-medium">Month</th>
-                  <th className="pb-2 text-right font-body font-medium">Amount</th>
-                  <th className="pb-2 text-right font-body font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-rule">
-                {rows.map((c) => (
-                  <tr key={c.id}>
-                    <td className="py-2.5 font-body text-sm text-ink">
-                      {new Date(c.date).toLocaleDateString('en-NG', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </td>
-                    <td className="py-2.5 font-mono text-sm text-ink-muted">{c.month_logged}</td>
-                    <td className="tabular py-2.5 text-right font-mono text-sm text-ink">
-                      {formatNaira(c.amount)}
-                    </td>
-                    <td className="py-2.5 text-right">
-                      <Badge variant="available">Confirmed</Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="mt-6">
+          <PassbookLedgerTable rows={rows} />
+        </div>
       </div>
     </div>
   );
