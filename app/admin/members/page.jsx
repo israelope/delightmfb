@@ -1,4 +1,4 @@
-import InviteCodeGenerator from '@/components/features/InviteCodeGenerator';
+
 import MemberManagement from '@/components/features/MemberManagement';
 
 export default function AdminMembersPage() {
@@ -11,7 +11,6 @@ export default function AdminMembersPage() {
       <div className="mb-6">
         <MemberManagement />
       </div>
-      <InviteCodeGenerator />
     </div>
   );
 }

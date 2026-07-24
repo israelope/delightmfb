@@ -124,4 +124,4 @@ Add your NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to the Verce
 
 Deploy!
 
-Built with 💡 and ☕ for Delight MFB by Oloyede Israel
+Built with 💡 and ☕ for Delight MFB by Oloyede Israel.

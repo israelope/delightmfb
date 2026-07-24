@@ -10,6 +10,7 @@ import Image from 'next/image';
 const NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/members', label: 'Members', icon: Users },
+  { href: '/admin/invite-codes', label: 'Invite Codes', icon: BookMarked },
   { href: '/admin/contributions', label: 'Contributions', icon: Wallet },
   { href: '/admin/loans', label: 'Loans', icon: HandCoins },
 ];

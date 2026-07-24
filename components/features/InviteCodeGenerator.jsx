@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Copy, Check, Plus } from 'lucide-react';
+import { Copy, Check, Plus, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -19,6 +19,8 @@ export default function InviteCodeGenerator() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
   const [copiedCode, setCopiedCode] = useState(null);
+  const [deletingCode, setDeletingCode] = useState(null);
+  const [clearingUsed, setClearingUsed] = useState(false);
 
   async function loadCodes() {
     setLoadingList(true);
@@ -70,6 +72,37 @@ export default function InviteCodeGenerator() {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode((c) => (c === code ? null : c)), 2000);
+  }
+
+  async function handleDelete(code) {
+    setError('');
+    setDeletingCode(code);
+    const supabase = createClient();
+    const { error: deleteError } = await supabase.from('invite_codes').delete().eq('code', code);
+    setDeletingCode(null);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    await loadCodes();
+  }
+
+  async function handleClearUsed() {
+    const confirmed = window.confirm(
+      `Delete all ${used.length} used invite code${used.length === 1 ? '' : 's'}? This can't be undone.`
+    );
+    if (!confirmed) return;
+
+    setError('');
+    setClearingUsed(true);
+    const supabase = createClient();
+    const { error: deleteError } = await supabase.from('invite_codes').delete().eq('is_used', true);
+    setClearingUsed(false);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    await loadCodes();
   }
 
   const available = codes.filter((c) => !c.is_used);
@@ -124,6 +157,14 @@ export default function InviteCodeGenerator() {
                       <Copy className="h-4 w-4" />
                     )}
                   </button>
+                  <button
+                    onClick={() => handleDelete(code)}
+                    disabled={deletingCode === code}
+                    className="text-ink-muted hover:text-brick disabled:opacity-50"
+                    aria-label={`Delete ${code}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </li>
             ))}
@@ -133,14 +174,33 @@ export default function InviteCodeGenerator() {
 
       {used.length > 0 && (
         <div className="mt-6">
-          <p className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
-            Used ({used.length})
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
+              Used ({used.length})
+            </p>
+            <button
+              onClick={handleClearUsed}
+              disabled={clearingUsed}
+              className="font-body text-xs text-brick hover:underline disabled:opacity-50"
+            >
+              {clearingUsed ? 'Clearing…' : 'Clear all used'}
+            </button>
+          </div>
           <ul className="mt-3 space-y-2">
             {used.map(({ code }) => (
               <li key={code} className="flex items-center justify-between rounded-sm border border-rule px-3.5 py-2.5 opacity-60">
                 <span className="font-mono text-sm tracking-wide text-ink">{code}</span>
-                <Badge variant="used">Used</Badge>
+                <div className="flex items-center gap-3">
+                  <Badge variant="used">Used</Badge>
+                  <button
+                    onClick={() => handleDelete(code)}
+                    disabled={deletingCode === code}
+                    className="text-ink-muted hover:text-brick disabled:opacity-50"
+                    aria-label={`Delete ${code}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
