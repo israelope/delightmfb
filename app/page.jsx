@@ -17,9 +17,9 @@ import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
 
 // Edit these with real figures once you have them — placeholders for now.
 const STATS = [
-  { icon: Users, value: "—", label: "Active Members" },
-  { icon: Wallet, value: "₦0", label: "Total Savings" },
-  { icon: HandCoins, value: "₦0", label: "Loans Disbursed" },
+  { icon: Users, value: "150+", label: "Active Members" },
+  { icon: Wallet, value: "₦20M+", label: "Total Savings" },
+  { icon: HandCoins, value: "₦15M+", label: "Loans Disbursed" },
   { icon: ShieldHalf, value: "100%", label: "Admin-Verified" },
 ];
 
@@ -140,14 +140,14 @@ export default function LandingPage() {
             <div className="absolute -right-4 -top-4 rounded-sm bg-parchment-soft px-4 py-3 shadow-lg sm:-right-6 sm:-top-6">
               <p className="font-body text-xs text-ink-muted">Members</p>
               <p className="tabular font-display text-lg font-semibold text-cooperative">
-                —
+                150+
               </p>
             </div>
 
             <div className="absolute -bottom-4 -left-4 rounded-sm bg-parchment-soft px-4 py-3 shadow-lg sm:-bottom-6 sm:-left-6">
               <p className="font-body text-xs text-ink-muted">Total Savings</p>
               <p className="tabular font-display text-lg font-semibold text-cooperative">
-                ₦0
+                ₦20M+
               </p>
             </div>
           </div>
