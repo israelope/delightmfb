@@ -8,7 +8,7 @@ export default function AuthLayout({ children }) {
         <Link href="/" className="flex w-fit items-center gap-2">
           <BookMarked className="h-5 w-5 text-cooperative" strokeWidth={2} />
           <span className="font-display text-lg font-semibold tracking-tight text-ink">
-            Delight <span className="text-cooperative">CICS</span>
+            Delight of God <span className="text-cooperative">CICS</span>
           </span>
         </Link>
       </div>

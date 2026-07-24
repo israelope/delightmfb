@@ -101,7 +101,7 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
           priority // Tells Next.js to load this immediately since it's above the fold
         />
           <span className="font-display text-base font-semibold text-parchment-soft">
-            Delight <span className="text-brass-light">MFB</span>
+            Delight of God <span className="text-brass-light">CICS</span>
           </span>
         </Link>
         <div className="flex items-center gap-4">
@@ -155,7 +155,7 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
           priority // Tells Next.js to load this immediately since it's above the fold
         />
             <span className="font-display text-lg font-semibold text-parchment-soft">
-              Delight <span className="text-brass-light">MFB</span>
+              Delight of God <span className="text-brass-light">CICS</span>
             </span>
           </Link>
 

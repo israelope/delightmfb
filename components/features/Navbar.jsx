@@ -28,7 +28,7 @@ export default function Navbar() {
           priority // Tells Next.js to load this immediately since it's above the fold
         />
           <span className="font-display text-lg font-semibold tracking-tight text-ink">
-            Delight <span className="text-cooperative">CICS</span>
+            Delight of God <span className="text-cooperative">CICS</span>
           </span>
         </Link>
 

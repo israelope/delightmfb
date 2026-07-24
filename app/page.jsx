@@ -45,7 +45,7 @@ const STEPS = [
   {
     n: "01",
     title: "An officer issues your invite code",
-    body: "Membership stays by referral. A Delight CICS officer generates a single-use code for you offline.",
+    body: "Membership stays by referral. A Delight of God CICS officer generates a single-use code for you offline.",
     icon: KeyRound,
   },
   {
@@ -104,7 +104,7 @@ export default function LandingPage() {
             </p>
             <h1 className="max-w-lg font-display text-4xl font-semibold leading-[1.1] text-parchment-soft sm:text-5xl md:text-6xl md:leading-[1.08]">
               Welcome to{" "}
-              <span className="italic text-brass-light">Delight CICS</span>{" "}
+              <span className="italic text-brass-light">Delight of God CICS</span>{" "}
               Cooperative Society
             </h1>
             <p className="mt-6 max-w-md font-body text-base leading-relaxed text-parchment-soft/80">
@@ -220,13 +220,13 @@ export default function LandingPage() {
             />
             <div>
               <p className="font-mono text-xs uppercase tracking-[0.2em] text-brass">
-                About Delight CICS
+                About Delight of God CICS
               </p>
               <h2 className="mt-2 font-display text-3xl font-semibold text-ink">
                 Built for cooperatives that run on trust, not paperwork
               </h2>
               <p className="mt-4 font-body leading-relaxed text-ink-muted">
-                Delight CICS is a record-keeping tool, not a bank. No money moves
+                Delight of God CICS is a record-keeping tool, not a bank. No money moves
                 through this platform — your admin logs contributions and loan
                 activity exactly as it happens offline, so the ledger you see
                 here always matches the one in the office.
@@ -329,7 +329,7 @@ export default function LandingPage() {
       <section className="px-6 py-14 md:py-20">
         <div className="mx-auto max-w-6xl rounded-lg bg-cooperative px-8 py-12 text-center">
           <h2 className="font-display text-2xl font-semibold text-parchment-soft sm:text-3xl">
-            Ready to join Delight CICS?
+            Ready to join Delight of God CICS?
           </h2>
           <p className="mx-auto mt-3 max-w-md font-body text-parchment-soft/80">
             Reach out to your cooperative officer for an invite code, then
@@ -359,12 +359,16 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-4">
             <div>
               <div className="flex items-center gap-2">
-                <Landmark
-                  className="h-5 w-5 text-brass-light"
-                  strokeWidth={1.75}
-                />
+                <Image 
+                          src="/logo/delightlogo.png" // or "/logo.svg"
+                          alt="Delight MFB Logo" 
+                          width={150} // Adjust based on your logo's actual proportions
+                          height={40} 
+                          className="h-10 w-auto object-contain" 
+                          priority // Tells Next.js to load this immediately since it's above the fold
+                        />
                 <span className="font-display text-lg font-semibold text-parchment-soft">
-                  Delight <span className="text-brass-light">CICS</span>
+                  Delight of God <span className="text-brass-light">CICS</span>
                 </span>
               </div>
               <p className="mt-3 font-body text-sm text-parchment-soft/70">
@@ -432,10 +436,9 @@ export default function LandingPage() {
 
           <div className="mt-10 flex flex-col gap-3 border-t border-parchment-soft/15 pt-6 text-center font-body text-xs text-parchment-soft/60 sm:flex-row sm:justify-between sm:text-left">
             <p>
-              &copy; {new Date().getFullYear()} Delight Thrift &amp; Credit
-              Cooperative Society.
+              &copy; {new Date().getFullYear()} Delight of God CICS
             </p>
-            <p>Internal ledger tool — not a payment platform.</p>
+            <p>Internal ledger tool.</p>
           </div>
         </div>
       </footer>

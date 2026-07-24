@@ -47,7 +47,7 @@ export default function AdminNav({ fullName }) {
                     priority // Tells Next.js to load this immediately since it's above the fold
                   />
           <span className="font-display text-base font-semibold text-ink">
-            Delight <span className="text-cooperative">CICS</span>
+            Delight of God <span className="text-cooperative">CICS</span>
           </span>
         </Link>
         <button onClick={() => setOpen((o) => !o)} aria-label="Toggle menu" className="text-ink">
@@ -83,7 +83,7 @@ export default function AdminNav({ fullName }) {
                       priority // Tells Next.js to load this immediately since it's above the fold
                     />
             <span className="font-display text-lg font-semibold text-ink">
-              Delight <span className="text-cooperative">CICS</span>
+              Delight of God <span className="text-cooperative">CICS</span>
             </span>
           </Link>
           <nav className="px-3">
