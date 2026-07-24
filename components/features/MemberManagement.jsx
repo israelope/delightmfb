@@ -176,100 +176,112 @@ export default function MemberManagement() {
         <ul className="mt-4 divide-y divide-rule">
           {filteredMembers.map((m) => {
             const isSelf = m.id === currentUserId;
+            const hasActions = !isSelf || m.status === 'pending';
+
             return (
-              <li key={m.id} className="flex flex-wrap items-center justify-between gap-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate font-body text-sm font-medium text-ink">
-                    {m.full_name}
-                    {m.role === 'admin' && (
-                      <span className="ml-2 font-mono text-[11px] uppercase tracking-wide text-brass">
-                        admin
-                      </span>
-                    )}
-                    {isSelf && (
-                      <span className="ml-2 font-mono text-[11px] uppercase tracking-wide text-ink-muted">
-                        you
-                      </span>
-                    )}
-                  </p>
-                  <p className="font-mono text-xs text-ink-muted">{m.cooperative_id}</p>
-                  <p className="truncate font-body text-xs text-ink-muted">{m.email}</p>
+              <li key={m.id} className="flex flex-col gap-3 py-4">
+                
+                {/* --- TOP ROW: User Info & Status Badge --- */}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="truncate font-body text-sm font-medium text-ink">
+                      {m.full_name}
+                      {m.role === 'admin' && (
+                        <span className="ml-2 font-mono text-[11px] uppercase tracking-wide text-brass">
+                          admin
+                        </span>
+                      )}
+                      {isSelf && (
+                        <span className="ml-2 font-mono text-[11px] uppercase tracking-wide text-ink-muted">
+                          you
+                        </span>
+                      )}
+                    </p>
+                    <p className="font-mono text-xs text-ink-muted">{m.cooperative_id}</p>
+                    <p className="truncate font-body text-xs text-ink-muted">{m.email}</p>
+                  </div>
+                  
+                  <div className="mt-0.5 shrink-0">
+                    <Badge variant={BADGE_VARIANT[m.status]}>{m.status}</Badge>
+                  </div>
                 </div>
 
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <Badge variant={BADGE_VARIANT[m.status]}>{m.status}</Badge>
+                {/* --- BOTTOM ROW: Action Buttons (Forced Single Line) --- */}
+                {hasActions && (
+                  <div className="flex w-full flex-nowrap items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] sm:gap-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]">
+                    
+                    {m.status === 'pending' && (
+                      <Button
+                        variant="primary"
+                        className="shrink-0 whitespace-nowrap px-3 py-1.5 text-xs"
+                        loading={busyId === m.id}
+                        onClick={() => updateProfile(m.id, { status: 'active' })}
+                      >
+                        <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        Approve
+                      </Button>
+                    )}
 
-                  {m.status === 'pending' && (
-                    <Button
-                      variant="primary"
-                      className="px-3 py-1.5 text-xs"
-                      loading={busyId === m.id}
-                      onClick={() => updateProfile(m.id, { status: 'active' })}
-                    >
-                      <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-                      Approve
-                    </Button>
-                  )}
+                    {m.status === 'active' && m.role !== 'admin' && (
+                      <>
+                        <Button
+                          variant="secondary"
+                          className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-xs"
+                          loading={busyId === m.id}
+                          onClick={() => handlePromote(m)}
+                        >
+                          <ShieldPlus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          Make admin
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-xs text-brick hover:bg-brick/5"
+                          loading={busyId === m.id}
+                          onClick={() => updateProfile(m.id, { status: 'suspended' })}
+                        >
+                          <Ban className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          Suspend
+                        </Button>
+                      </>
+                    )}
 
-                  {m.status === 'active' && m.role !== 'admin' && (
-                    <>
+                    {m.status === 'active' && m.role === 'admin' && !isSelf && (
                       <Button
                         variant="secondary"
-                        className="px-3 py-1.5 text-xs"
+                        className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-xs"
                         loading={busyId === m.id}
-                        onClick={() => handlePromote(m)}
+                        onClick={() => handleDemote(m)}
                       >
-                        <ShieldPlus className="h-3.5 w-3.5" strokeWidth={2.5} />
-                        Make admin
+                        <ShieldMinus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        Demote to member
                       </Button>
+                    )}
+
+                    {m.status === 'suspended' && (
+                      <Button
+                        variant="secondary"
+                        className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-xs"
+                        loading={busyId === m.id}
+                        onClick={() => updateProfile(m.id, { status: 'active' })}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        Reactivate
+                      </Button>
+                    )}
+
+                    {!isSelf && (
                       <Button
                         variant="ghost"
-                        className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
+                        className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-xs text-brick hover:bg-brick/5"
                         loading={busyId === m.id}
-                        onClick={() => updateProfile(m.id, { status: 'suspended' })}
+                        onClick={() => handleDelete(m)}
                       >
-                        <Ban className="h-3.5 w-3.5" strokeWidth={2.5} />
-                        Suspend
+                        <Trash2 className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        Delete
                       </Button>
-                    </>
-                  )}
-
-                  {m.status === 'active' && m.role === 'admin' && !isSelf && (
-                    <Button
-                      variant="secondary"
-                      className="px-3 py-1.5 text-xs"
-                      loading={busyId === m.id}
-                      onClick={() => handleDemote(m)}
-                    >
-                      <ShieldMinus className="h-3.5 w-3.5" strokeWidth={2.5} />
-                      Demote to member
-                    </Button>
-                  )}
-
-                  {m.status === 'suspended' && (
-                    <Button
-                      variant="secondary"
-                      className="px-3 py-1.5 text-xs"
-                      loading={busyId === m.id}
-                      onClick={() => updateProfile(m.id, { status: 'active' })}
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" strokeWidth={2.5} />
-                      Reactivate
-                    </Button>
-                  )}
-
-                  {!isSelf && (
-                    <Button
-                      variant="ghost"
-                      className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
-                      loading={busyId === m.id}
-                      onClick={() => handleDelete(m)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={2.5} />
-                      Delete
-                    </Button>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
               </li>
             );
           })}
