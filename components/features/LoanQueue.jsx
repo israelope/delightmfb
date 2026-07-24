@@ -500,4 +500,7 @@ export default function LoanQueue() {
             );
           })}
         </ul>
-      
+      )}
+    </div>
+  );
+}
