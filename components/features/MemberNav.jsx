@@ -143,7 +143,7 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex  md:min-h-screen md:w-64 md:shrink-0 md:flex-col md:justify-between md:bg-cooperative-dark">
+      <aside className="hidden md:flex md:top-0 md:sticky  md:h-screen md:w-64 md:shrink-0 md:flex-col md:justify-between md:bg-cooperative-dark">
         <div>
           <Link href="/member/dashboard" className="flex items-center gap-2 px-6 py-6">
             <Image 
