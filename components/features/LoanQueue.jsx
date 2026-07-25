@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
+  FileText,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatNaira, formatDate } from '@/lib/utils';
@@ -45,6 +46,7 @@ export default function LoanQueue() {
   const [repayAmounts, setRepayAmounts] = useState({});
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   async function loadLoans() {
     setLoading(true);
@@ -109,6 +111,31 @@ export default function LoanQueue() {
       return;
     }
     await loadLoans();
+  }
+
+  async function viewDocument(loanId) {
+    const supabase = createClient();
+    const { data: doc } = await supabase
+      .from('loan_documents')
+      .select('file_path')
+      .eq('loan_id', loanId)
+      .maybeSingle();
+
+    if (!doc) {
+      setError('No document found for this loan.');
+      return;
+    }
+
+    const { data: signed, error: signError } = await supabase.storage
+      .from('loan-documents')
+      .createSignedUrl(doc.file_path, 60);
+
+    if (signError || !signed) {
+      setError('Could not open the document.');
+      return;
+    }
+
+    window.open(signed.signedUrl, '_blank', 'noopener,noreferrer');
   }
 
   async function loadRepayments(loanId) {
@@ -177,6 +204,14 @@ export default function LoanQueue() {
     await loadLoans();
   }
 
+  const statusCounts = useMemo(() => {
+    const counts = { all: loans.length, requested: 0, approved: 0, disbursed: 0, cleared: 0, rejected: 0 };
+    loans.forEach((l) => {
+      counts[l.status] = (counts[l.status] ?? 0) + 1;
+    });
+    return counts;
+  }, [loans]);
+
   const filteredLoans = useMemo(() => {
     const term = search.trim().toLowerCase();
     return loans.filter((l) => {
@@ -192,9 +227,11 @@ export default function LoanQueue() {
           (ts) => ts && ts.slice(0, 10) === dateFilter
         );
 
-      return matchesTerm && matchesDate;
+      const matchesStatus = statusFilter === 'all' || l.status === statusFilter;
+
+      return matchesTerm && matchesDate && matchesStatus;
     });
-  }, [loans, profilesById, search, dateFilter]);
+  }, [loans, profilesById, search, dateFilter, statusFilter]);
 
   const openCount = loans.filter((l) => ['requested', 'approved'].includes(l.status)).length;
 
@@ -209,7 +246,30 @@ export default function LoanQueue() {
         </p>
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-3">
+      <div className="mt-5 flex flex-wrap gap-2">
+        {[
+          { key: 'all', label: 'All' },
+          { key: 'requested', label: 'Requested' },
+          { key: 'approved', label: 'Approved' },
+          { key: 'disbursed', label: 'Disbursed' },
+          { key: 'cleared', label: 'Cleared' },
+          { key: 'rejected', label: 'Rejected' },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setStatusFilter(key)}
+            className={`rounded-full border px-3 py-1.5 font-body text-xs font-medium transition-colors ${
+              statusFilter === key
+                ? 'border-cooperative bg-cooperative text-parchment-soft'
+                : 'border-rule bg-parchment text-ink-muted hover:border-cooperative hover:text-cooperative'
+            }`}
+          >
+            {label} <span className="font-mono">({statusCounts[key] ?? 0})</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-3">
         <div className="relative min-w-[220px] flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
           <input
@@ -273,6 +333,15 @@ export default function LoanQueue() {
 
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={BADGE_VARIANT[l.status]}>{l.status}</Badge>
+
+                    <Button
+                      variant="ghost"
+                      className="px-3 py-1.5 text-xs"
+                      onClick={() => viewDocument(l.loan_id)}
+                    >
+                      <FileText className="h-3.5 w-3.5" strokeWidth={2.25} />
+                      Document
+                    </Button>
 
                     {l.status === 'requested' && (
                       <>

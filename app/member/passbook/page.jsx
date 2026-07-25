@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import Passbook from '@/components/features/Passbook';
+import ReceiptUpload from '@/components/features/ReceiptUpload';
 
 export default async function MemberPassbookPage() {
   const supabase = await createClient();
@@ -15,8 +16,9 @@ export default async function MemberPassbookPage() {
       <p className="mt-1 font-body text-sm text-ink-muted">
         Your wallet balance and full contribution history.
       </p>
-      <div className="mt-6">
+      <div className="mt-6 space-y-6">
         <Passbook userId={user.id} />
+        <ReceiptUpload userId={user.id} />
       </div>
     </div>
   );

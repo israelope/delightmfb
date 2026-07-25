@@ -7,6 +7,8 @@ import { formatNaira } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import ProgressBar from '@/components/ui/ProgressBar';
+import LoanEligibilityStatus from '@/components/features/LoanEligibilityStatus';
+import LoanDocumentUpload from '@/components/features/LoanDocumentUpload';
 
 const ELIGIBILITY_MULTIPLIER = 2;
 const OPEN_STATUSES = ['requested', 'approved', 'disbursed'];
@@ -27,6 +29,8 @@ export default function LoanPortal({ userId }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [isMonthsEligible, setIsMonthsEligible] = useState(null);
+  const [hasDocument, setHasDocument] = useState(null);
 
   async function loadData() {
     setLoading(true);
@@ -145,33 +149,47 @@ export default function LoanPortal({ userId }) {
               Log at least one contribution to unlock loan eligibility.
             </p>
           ) : (
-            <form onSubmit={handleRequest} className="mt-4 flex flex-wrap items-end gap-3">
-              <label className="flex flex-col gap-1.5">
-                <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
-                  Amount to request
-                </span>
-                <input
-                  type="number"
-                  min="1"
-                  max={limit}
-                  step="0.01"
-                  placeholder="₦0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-44 rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
-                />
-              </label>
-              <Button type="submit" variant="primary" loading={submitting} disabled={!isValidAmount}>
-                <Send className="h-4 w-4" strokeWidth={2.25} />
-                Request loan
-              </Button>
-              {requestedAmount > 0 && (
-                <p className="w-full font-body text-xs text-ink-muted">
-                  With a {interestRate}% interest rate, you'd repay a total of{' '}
-                  <span className="font-medium text-ink">{formatNaira(previewTotal)}</span>.
-                </p>
+            <div className="mt-4 space-y-3">
+              <LoanEligibilityStatus userId={userId} onChange={(e) => setIsMonthsEligible(e?.is_eligible ?? false)} />
+              <LoanDocumentUpload userId={userId} onChange={setHasDocument} />
+
+              {isMonthsEligible && hasDocument ? (
+                <form onSubmit={handleRequest} className="flex flex-wrap items-end gap-3 pt-1">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
+                      Amount to request
+                    </span>
+                    <input
+                      type="number"
+                      min="1"
+                      max={limit}
+                      step="0.01"
+                      placeholder="₦0.00"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-44 rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+                    />
+                  </label>
+                  <Button type="submit" variant="primary" loading={submitting} disabled={!isValidAmount}>
+                    <Send className="h-4 w-4" strokeWidth={2.25} />
+                    Request loan
+                  </Button>
+                  {requestedAmount > 0 && (
+                    <p className="w-full font-body text-xs text-ink-muted">
+                      With a {interestRate}% interest rate, you'd repay a total of{' '}
+                      <span className="font-medium text-ink">{formatNaira(previewTotal)}</span>.
+                    </p>
+                  )}
+                </form>
+              ) : (
+                isMonthsEligible !== null &&
+                hasDocument !== null && (
+                  <p className="font-body text-xs text-ink-muted">
+                    Meet both requirements above to unlock the request form.
+                  </p>
+                )
               )}
-            </form>
+            </div>
           )}
 
           {loans.length > 0 && (
