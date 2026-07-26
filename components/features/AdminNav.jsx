@@ -65,7 +65,7 @@ export default function AdminNav({ fullName }) {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:sticky md:h-screen md:w-60 md:shrink-0 md:flex-col md:justify-between md:border-r md:border-rule md:bg-parchment-soft">
+      <aside className="hidden md:flex md:sticky md:top-0 md:h-screen md:w-60 md:shrink-0 md:flex-col md:justify-between md:border-r md:border-rule md:bg-parchment-soft">
         <div>
           <Link href="/admin/dashboard" className="flex items-center gap-2 px-6 py-6">
             <BookMarked className="h-5 w-5 text-cooperative" strokeWidth={2} />
