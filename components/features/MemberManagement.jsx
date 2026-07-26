@@ -176,49 +176,70 @@ export default function MemberManagement() {
         <ul className="mt-4 divide-y divide-rule">
           {filteredMembers.map((m) => {
             const isSelf = m.id === currentUserId;
+            
             return (
-              <li key={m.id} className="flex flex-wrap items-center justify-between gap-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate font-body text-sm font-medium text-ink">
-                    {m.full_name}
-                    {m.role === 'admin' && (
-                      <span className="ml-2 font-mono text-[11px] uppercase tracking-wide text-brass">
-                        admin
-                      </span>
+              <li key={m.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
+                
+                {/* --- LEFT SECTION: User Info & Loan Eligibility --- */}
+                <div className="flex w-full flex-col gap-3 sm:w-auto sm:min-w-0">
+                  <div className="min-w-0">
+                    <p className="truncate font-body text-sm font-medium text-ink">
+                      {m.full_name}
+                      {m.role === 'admin' && (
+                        <span className="ml-2 font-mono text-[11px] uppercase tracking-wide text-brass">
+                          admin
+                        </span>
+                      )}
+                      {isSelf && (
+                        <span className="ml-2 font-mono text-[11px] uppercase tracking-wide text-ink-muted">
+                          you
+                        </span>
+                      )}
+                    </p>
+                    <p className="font-mono text-xs text-ink-muted">{m.cooperative_id}</p>
+                    <p className="truncate font-body text-xs text-ink-muted">{m.email}</p>
+                  </div>
+
+                  {/* Loan Eligibility & Mobile Badge Row */}
+                  <div className="flex items-center justify-between gap-4">
+                    {m.role !== 'admin' ? (
+                      <label className="flex items-center gap-1.5">
+                        <span className="font-body text-[11px] text-ink-muted">Loan eligibility:</span>
+                        <select
+                          value={m.loan_eligibility_months}
+                          disabled={busyId === m.id}
+                          onChange={(e) =>
+                            updateProfile(m.id, { loan_eligibility_months: Number(e.target.value) })
+                          }
+                          className="rounded-sm border border-rule bg-parchment px-1.5 py-0.5 font-mono text-[11px] text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+                        >
+                          <option value={3}>3 months</option>
+                          <option value={6}>6 months</option>
+                        </select>
+                      </label>
+                    ) : (
+                      <div /> /* Empty div pushes mobile badge to the right if select is hidden */
                     )}
-                    {isSelf && (
-                      <span className="ml-2 font-mono text-[11px] uppercase tracking-wide text-ink-muted">
-                        you
-                      </span>
-                    )}
-                  </p>
-                  <p className="font-mono text-xs text-ink-muted">{m.cooperative_id}</p>
-                  <p className="truncate font-body text-xs text-ink-muted">{m.email}</p>
-                  {m.role !== 'admin' && (
-                    <label className="mt-1.5 flex items-center gap-1.5">
-                      <span className="font-body text-[11px] text-ink-muted">Loan eligibility:</span>
-                      <select
-                        value={m.loan_eligibility_months}
-                        disabled={busyId === m.id}
-                        onChange={(e) =>
-                          updateProfile(m.id, { loan_eligibility_months: Number(e.target.value) })
-                        }
-                        className="rounded-sm border border-rule bg-parchment px-1.5 py-0.5 font-mono text-[11px] text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
-                      >
-                        <option value={3}>3 months</option>
-                        <option value={6}>6 months</option>
-                      </select>
-                    </label>
-                  )}
+
+                    {/* MOBILE BADGE (Hidden on desktop screens) */}
+                    <div className="shrink-0 sm:hidden">
+                      <Badge variant={BADGE_VARIANT[m.status]}>{m.status}</Badge>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <Badge variant={BADGE_VARIANT[m.status]}>{m.status}</Badge>
+                {/* --- RIGHT SECTION: Desktop Badge & Action Buttons --- */}
+                <div className="mt-1 flex w-full flex-nowrap items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] sm:mt-0 sm:w-auto sm:shrink-0 sm:gap-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]">
+                  
+                  {/* DESKTOP BADGE (Hidden on mobile screens) */}
+                  <div className="hidden shrink-0 sm:block">
+                    <Badge variant={BADGE_VARIANT[m.status]}>{m.status}</Badge>
+                  </div>
 
                   {m.status === 'pending' && (
                     <Button
                       variant="primary"
-                      className="px-3 py-1.5 text-xs"
+                      className="shrink-0 whitespace-nowrap px-3 py-1.5 text-xs"
                       loading={busyId === m.id}
                       onClick={() => updateProfile(m.id, { status: 'active' })}
                     >
@@ -231,7 +252,7 @@ export default function MemberManagement() {
                     <>
                       <Button
                         variant="secondary"
-                        className="px-3 py-1.5 text-xs"
+                        className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-xs"
                         loading={busyId === m.id}
                         onClick={() => handlePromote(m)}
                       >
@@ -240,7 +261,7 @@ export default function MemberManagement() {
                       </Button>
                       <Button
                         variant="ghost"
-                        className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
+                        className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-xs text-brick hover:bg-brick/5"
                         loading={busyId === m.id}
                         onClick={() => updateProfile(m.id, { status: 'suspended' })}
                       >
@@ -253,7 +274,7 @@ export default function MemberManagement() {
                   {m.status === 'active' && m.role === 'admin' && !isSelf && (
                     <Button
                       variant="secondary"
-                      className="px-3 py-1.5 text-xs"
+                      className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-xs"
                       loading={busyId === m.id}
                       onClick={() => handleDemote(m)}
                     >
@@ -265,7 +286,7 @@ export default function MemberManagement() {
                   {m.status === 'suspended' && (
                     <Button
                       variant="secondary"
-                      className="px-3 py-1.5 text-xs"
+                      className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-xs"
                       loading={busyId === m.id}
                       onClick={() => updateProfile(m.id, { status: 'active' })}
                     >
@@ -277,7 +298,7 @@ export default function MemberManagement() {
                   {!isSelf && (
                     <Button
                       variant="ghost"
-                      className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
+                      className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-xs text-brick hover:bg-brick/5"
                       loading={busyId === m.id}
                       onClick={() => handleDelete(m)}
                     >
