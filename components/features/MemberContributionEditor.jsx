@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client';
 import { formatNaira } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 
+const PAGE_SIZE = 10;
+
 function currentMonth() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -20,6 +22,7 @@ export default function MemberContributionEditor() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const [history, setHistory] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [edits, setEdits] = useState({});
   const [newRows, setNewRows] = useState([emptyRow()]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -58,6 +61,7 @@ export default function MemberContributionEditor() {
     setError('');
     setNotice('');
     setNewRows([emptyRow()]);
+    setVisibleCount(PAGE_SIZE);
     await loadHistory(member.id);
   }
 
@@ -136,6 +140,7 @@ export default function MemberContributionEditor() {
   }
 
   const loggedMonths = useMemo(() => new Set(history.map((h) => h.month_logged)), [history]);
+  const visibleHistory = useMemo(() => history.slice(0, visibleCount), [history, visibleCount]);
 
   async function saveNewRows() {
     const validRows = newRows.filter((r) => r.month && Number(r.amount) > 0);
@@ -241,48 +246,58 @@ export default function MemberContributionEditor() {
             ) : history.length === 0 ? (
               <p className="mt-3 font-body text-sm text-ink-muted">Nothing logged yet.</p>
             ) : (
-              <ul className="mt-3 divide-y divide-rule">
-                {history.map((row) => {
-                  const editValue = edits[row.id] ?? String(row.amount);
-                  const dirty = Number(editValue) !== Number(row.amount);
-                  return (
-                    <li
-                      key={row.id}
-                      className="flex flex-wrap items-center justify-between gap-3 py-2.5"
-                    >
-                      <span className="font-mono text-sm text-ink-muted">{row.month_logged}</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={editValue}
-                          onChange={(e) => updateEditValue(row.id, e.target.value)}
-                          className="tabular w-32 rounded-sm border border-rule bg-parchment px-3 py-1.5 text-right font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
-                        />
-                        <Button
-                          variant="secondary"
-                          className="px-2.5 py-1.5 text-xs"
-                          disabled={!dirty}
-                          loading={busy}
-                          onClick={() => saveEdit(row)}
-                        >
-                          <Save className="h-3.5 w-3.5" strokeWidth={2.25} />
-                          Save
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="px-2.5 py-1.5 text-xs text-brick hover:bg-brick/5"
-                          loading={busy}
-                          onClick={() => deleteContribution(row)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" strokeWidth={2.25} />
-                        </Button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+              <>
+                <ul className="mt-3 divide-y divide-rule">
+                  {visibleHistory.map((row) => {
+                    const editValue = edits[row.id] ?? String(row.amount);
+                    const dirty = Number(editValue) !== Number(row.amount);
+                    return (
+                      <li
+                        key={row.id}
+                        className="flex flex-wrap items-center justify-between gap-3 py-2.5"
+                      >
+                        <span className="font-mono text-sm text-ink-muted">{row.month_logged}</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={editValue}
+                            onChange={(e) => updateEditValue(row.id, e.target.value)}
+                            className="tabular w-32 rounded-sm border border-rule bg-parchment px-3 py-1.5 text-right font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+                          />
+                          <Button
+                            variant="secondary"
+                            className="px-2.5 py-1.5 text-xs"
+                            disabled={!dirty}
+                            loading={busy}
+                            onClick={() => saveEdit(row)}
+                          >
+                            <Save className="h-3.5 w-3.5" strokeWidth={2.25} />
+                            Save
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="px-2.5 py-1.5 text-xs text-brick hover:bg-brick/5"
+                            loading={busy}
+                            onClick={() => deleteContribution(row)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" strokeWidth={2.25} />
+                          </Button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {history.length > visibleCount && (
+                  <button
+                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                    className="mt-3 font-body text-xs font-medium text-cooperative hover:underline"
+                  >
+                    Show 10 more ({history.length - visibleCount} remaining)
+                  </button>
+                )}
+              </>
             )}
           </div>
 

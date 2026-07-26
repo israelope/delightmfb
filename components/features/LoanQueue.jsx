@@ -19,6 +19,7 @@ import Badge from '@/components/ui/Badge';
 import ProgressBar from '@/components/ui/ProgressBar';
 
 const STATUS_ORDER = { requested: 0, approved: 1, disbursed: 2, cleared: 3, rejected: 4 };
+const PAGE_SIZE = 10;
 const BADGE_VARIANT = {
   requested: 'pending',
   approved: 'pending',
@@ -47,6 +48,7 @@ export default function LoanQueue() {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   async function loadLoans() {
     setLoading(true);
@@ -212,6 +214,10 @@ export default function LoanQueue() {
     return counts;
   }, [loans]);
 
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [search, dateFilter, statusFilter]);
+
   const filteredLoans = useMemo(() => {
     const term = search.trim().toLowerCase();
     return loans.filter((l) => {
@@ -234,6 +240,7 @@ export default function LoanQueue() {
   }, [loans, profilesById, search, dateFilter, statusFilter]);
 
   const openCount = loans.filter((l) => ['requested', 'approved'].includes(l.status)).length;
+  const visibleLoans = filteredLoans.slice(0, visibleCount);
 
   return (
     <div className="rounded-sm border border-rule bg-parchment-soft p-6">
@@ -307,8 +314,9 @@ export default function LoanQueue() {
           {loans.length === 0 ? 'No loan requests yet.' : 'No loans match your search.'}
         </p>
       ) : (
+        <>
         <ul className="mt-6 divide-y divide-rule">
-          {filteredLoans.map((l) => {
+          {visibleLoans.map((l) => {
             const profile = profilesById[l.user_id];
             const rate = rates[l.loan_id] ?? l.interest_rate ?? 0;
             const pct =
@@ -358,12 +366,27 @@ export default function LoanQueue() {
                             className="w-16 rounded-sm border border-rule bg-parchment px-2 py-1.5 font-mono text-xs text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                           />
                         </label>
+                        <label className="flex items-center gap-1.5">
+                          <span className="font-body text-xs text-ink-muted">Due date</span>
+                          <input
+                            type="date"
+                            value={dueDates[l.loan_id] ?? l.due_date ?? defaultDueDate()}
+                            onChange={(e) =>
+                              setDueDates((d) => ({ ...d, [l.loan_id]: e.target.value }))
+                            }
+                            className="rounded-sm border border-rule bg-parchment px-2 py-1.5 font-mono text-xs text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+                          />
+                        </label>
                         <Button
                           variant="primary"
                           className="px-3 py-1.5 text-xs"
                           loading={busyId === l.loan_id}
                           onClick={() =>
-                            updateLoan(l.loan_id, { status: 'approved', interest_rate: Number(rate) })
+                            updateLoan(l.loan_id, {
+                              status: 'approved',
+                              interest_rate: Number(rate),
+                              due_date: dueDates[l.loan_id] ?? l.due_date ?? defaultDueDate(),
+                            })
                           }
                         >
                           <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
@@ -398,7 +421,7 @@ export default function LoanQueue() {
                         </label>
                         <input
                           type="date"
-                          value={dueDates[l.loan_id] ?? defaultDueDate()}
+                          value={dueDates[l.loan_id] ?? l.due_date ?? defaultDueDate()}
                           onChange={(e) =>
                             setDueDates((d) => ({ ...d, [l.loan_id]: e.target.value }))
                           }
@@ -412,7 +435,7 @@ export default function LoanQueue() {
                             updateLoan(l.loan_id, {
                               status: 'disbursed',
                               interest_rate: Number(rate),
-                              due_date: dueDates[l.loan_id] ?? defaultDueDate(),
+                              due_date: dueDates[l.loan_id] ?? l.due_date ?? defaultDueDate(),
                             })
                           }
                         >
@@ -535,6 +558,15 @@ export default function LoanQueue() {
             );
           })}
         </ul>
+        {filteredLoans.length > visibleCount && (
+          <button
+            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            className="mt-3 font-body text-xs font-medium text-cooperative hover:underline"
+          >
+            Show 10 more ({filteredLoans.length - visibleCount} remaining)
+          </button>
+        )}
+        </>
       )}
     </div>
   );

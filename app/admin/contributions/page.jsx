@@ -1,6 +1,5 @@
 import BatchContributionLogger from '@/components/features/BatchContributionLogger';
 import MemberContributionEditor from '@/components/features/MemberContributionEditor';
-import PendingReceipts from '@/components/features/PendingReceipts';
 
 export default function AdminContributionsPage() {
   return (
@@ -10,9 +9,8 @@ export default function AdminContributionsPage() {
         Log monthly savings for active members.
       </p>
       <div className="mt-6 space-y-6">
+        <BatchContributionLogger />
         <MemberContributionEditor />
-        < BatchContributionLogger/>
-        <PendingReceipts />
       </div>
     </div>
   );

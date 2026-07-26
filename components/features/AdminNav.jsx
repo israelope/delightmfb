@@ -3,16 +3,16 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Wallet, HandCoins, Menu, X, BookMarked } from 'lucide-react';
+import { LayoutDashboard, Users, KeyRound, Wallet, HandCoins, Receipt, Menu, X, BookMarked } from 'lucide-react';
 import SignOutButton from './SignOutButton';
-import Image from 'next/image';
 
 const NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/members', label: 'Members', icon: Users },
-  { href: '/admin/invite-codes', label: 'Invite Codes', icon: BookMarked },
+  { href: '/admin/invite-codes', label: 'Invite Codes', icon: KeyRound },
   { href: '/admin/contributions', label: 'Contributions', icon: Wallet },
   { href: '/admin/loans', label: 'Loans', icon: HandCoins },
+  { href: '/admin/receipts', label: 'Receipts', icon: Receipt },
 ];
 
 function NavLink({ href, label, icon: Icon, active, onClick }) {
@@ -39,16 +39,9 @@ export default function AdminNav({ fullName }) {
       {/* Mobile top bar */}
       <div className="flex items-center justify-between border-b border-rule bg-parchment-soft px-4 py-3 md:hidden">
         <Link href="/admin/dashboard" className="flex items-center gap-2">
-          <Image 
-                    src="/logo/delightlogo.png" // or "/logo.svg"
-                    alt="Delight MFB Logo" 
-                    width={150} // Adjust based on your logo's actual proportions
-                    height={40} 
-                    className="h-10 w-auto object-contain" 
-                    priority // Tells Next.js to load this immediately since it's above the fold
-                  />
+          <BookMarked className="h-5 w-5 text-cooperative" strokeWidth={2} />
           <span className="font-display text-base font-semibold text-ink">
-            Delight of God <span className="text-cooperative">CICS</span>
+            Delight <span className="text-cooperative">MFB</span>
           </span>
         </Link>
         <button onClick={() => setOpen((o) => !o)} aria-label="Toggle menu" className="text-ink">
@@ -72,19 +65,12 @@ export default function AdminNav({ fullName }) {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:h-screen md:sticky md:top-0 md:w-60 md:shrink-0 md:flex-col md:justify-between md:border-r md:border-rule md:bg-parchment-soft">
+      <aside className="hidden md:flex md:sticky md:h-screen md:w-60 md:shrink-0 md:flex-col md:justify-between md:border-r md:border-rule md:bg-parchment-soft">
         <div>
           <Link href="/admin/dashboard" className="flex items-center gap-2 px-6 py-6">
-            <Image 
-                      src="/logo/delightlogo.png" // or "/logo.svg"
-                      alt="Delight MFB Logo" 
-                      width={150} // Adjust based on your logo's actual proportions
-                      height={40} 
-                      className="h-10 w-auto object-contain" 
-                      priority // Tells Next.js to load this immediately since it's above the fold
-                    />
+            <BookMarked className="h-5 w-5 text-cooperative" strokeWidth={2} />
             <span className="font-display text-lg font-semibold text-ink">
-              Delight of God <span className="text-cooperative">CICS</span>
+              Delight <span className="text-cooperative">MFB</span>
             </span>
           </Link>
           <nav className="px-3">
