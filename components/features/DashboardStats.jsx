@@ -12,15 +12,18 @@ export default async function DashboardStats({ userId }) {
 
   const [{ data: contributions }, { data: loans }] = await Promise.all([
     supabase.from('contributions').select('amount, month_logged').eq('user_id', userId),
+    // loan_balances.amount_outstanding already accounts for interest
+    // (total_repayable) and subtracts anything already repaid — raw
+    // `principal` doesn't reflect either of those.
     supabase
-      .from('loans')
-      .select('principal, status')
+      .from('loan_balances')
+      .select('amount_outstanding, status')
       .eq('user_id', userId)
       .in('status', ['approved', 'disbursed']),
   ]);
 
   const savingsBalance = (contributions ?? []).reduce((sum, c) => sum + Number(c.amount), 0);
-  const loanBalance = (loans ?? []).reduce((sum, l) => sum + Number(l.principal), 0);
+  const loanBalance = (loans ?? []).reduce((sum, l) => sum + Number(l.amount_outstanding), 0);
   const totalBalance = savingsBalance - loanBalance;
   const thisMonth = (contributions ?? [])
     .filter((c) => c.month_logged === currentMonth())
