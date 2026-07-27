@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, KeyRound, Wallet, HandCoins, Receipt, Menu, X, BookMarked } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 import SignOutButton from './SignOutButton';
 
 const NAV_ITEMS = [
@@ -15,17 +16,28 @@ const NAV_ITEMS = [
   { href: '/admin/receipts', label: 'Receipts', icon: Receipt },
 ];
 
-function NavLink({ href, label, icon: Icon, active, onClick }) {
+function NavLink({ href, label, icon: Icon, active, badge, onClick }) {
   return (
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center gap-2.5 rounded-sm px-3 py-2.5 font-body text-sm transition-colors ${
+      className={`flex items-center justify-between gap-2.5 rounded-sm px-3 py-2.5 font-body text-sm transition-colors ${
         active ? 'bg-cooperative text-parchment-soft' : 'text-ink hover:bg-ink/5'
       }`}
     >
-      <Icon className="h-4 w-4" strokeWidth={1.75} />
-      {label}
+      <span className="flex items-center gap-2.5">
+        <Icon className="h-4 w-4" strokeWidth={1.75} />
+        {label}
+      </span>
+      {badge > 0 && (
+        <span
+          className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 font-mono text-[11px] font-semibold ${
+            active ? 'bg-parchment-soft text-cooperative' : 'bg-brick text-parchment-soft'
+          }`}
+        >
+          {badge > 9 ? '9+' : badge}
+        </span>
+      )}
     </Link>
   );
 }
@@ -33,6 +45,23 @@ function NavLink({ href, label, icon: Icon, active, onClick }) {
 export default function AdminNav({ fullName }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [pendingReceipts, setPendingReceipts] = useState(0);
+
+  useEffect(() => {
+    async function loadCount() {
+      const supabase = createClient();
+      const { count } = await supabase
+        .from('contribution_receipts')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      setPendingReceipts(count ?? 0);
+    }
+    loadCount();
+  }, []);
+
+  function badgeFor(href) {
+    return href === '/admin/receipts' ? pendingReceipts : 0;
+  }
 
   return (
     <>
@@ -54,7 +83,12 @@ export default function AdminNav({ fullName }) {
           <ul className="space-y-1">
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
-                <NavLink {...item} active={pathname === item.href} onClick={() => setOpen(false)} />
+                <NavLink
+                  {...item}
+                  active={pathname === item.href}
+                  badge={badgeFor(item.href)}
+                  onClick={() => setOpen(false)}
+                />
               </li>
             ))}
           </ul>
@@ -77,7 +111,7 @@ export default function AdminNav({ fullName }) {
             <ul className="space-y-1">
               {NAV_ITEMS.map((item) => (
                 <li key={item.href}>
-                  <NavLink {...item} active={pathname === item.href} />
+                  <NavLink {...item} active={pathname === item.href} badge={badgeFor(item.href)} />
                 </li>
               ))}
             </ul>

@@ -7,6 +7,18 @@ import Badge from '@/components/ui/Badge';
 
 const PAGE_SIZE = 10;
 
+// month_logged is stored as "YYYY-MM" — the month the contribution is
+// FOR, which can differ from the date it was actually logged on (e.g. a
+// May contribution entered in July). Always derive the human-readable
+// month name from month_logged, never from `date`.
+function monthLabel(monthLogged) {
+  const [year, month] = monthLogged.split('-').map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString('en-NG', {
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
 export default function PassbookLedgerTable({ rows }) {
   const [search, setSearch] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -15,13 +27,8 @@ export default function PassbookLedgerTable({ rows }) {
     const term = search.trim().toLowerCase();
     if (!term) return rows;
     return rows.filter((c) => {
-      const monthName = new Date(c.date).toLocaleDateString('en-NG', {
-        month: 'long',
-        year: 'numeric',
-      });
-      return (
-        c.month_logged?.toLowerCase().includes(term) || monthName.toLowerCase().includes(term)
-      );
+      const label = monthLabel(c.month_logged).toLowerCase();
+      return c.month_logged?.toLowerCase().includes(term) || label.includes(term);
     });
   }, [rows, search]);
 
@@ -35,15 +42,14 @@ export default function PassbookLedgerTable({ rows }) {
 
   return (
     <div>
-      <div className="relative">
+      <div className="relative ">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
         <input
-          type="text"
-          placeholder="Search by month, e.g. July or 2026-07…"
-          value={search}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          className="w-full rounded-sm border border-rule bg-parchment py-2.5 pl-9 pr-3 font-body text-sm text-ink placeholder:text-ink-muted/60 focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
-        />
+  type="month"
+  value={search}
+  onChange={(e) => handleSearchChange(e.target.value)}
+  className="w-full rounded-sm border border-rule bg-parchment px-3 py-2.5 font-body text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+/>
       </div>
 
       {filteredRows.length === 0 ? (
