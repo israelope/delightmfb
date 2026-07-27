@@ -20,7 +20,7 @@ export default function AdminOverviewPage() {
         <div className="rounded-sm border border-rule bg-parchment-soft p-6 lg:col-span-2">
           <h2 className="font-display text-lg font-semibold text-ink">Monthly Collections</h2>
           <p className="mt-1 font-body text-sm text-ink-muted">
-            Savings, loan repayments, and loans disbursed — last 6 months.
+            Savings, loan repayments, and loans disbursed — last 12 months.
           </p>
           <div className="mt-4">
             <CollectionsChart />

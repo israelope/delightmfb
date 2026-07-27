@@ -51,7 +51,7 @@ export default async function MemberDashboardPage() {
         <div className="rounded-sm border border-rule bg-parchment-soft p-6 lg:col-span-2">
           <h2 className="font-display text-lg font-semibold text-ink">Savings Growth</h2>
           <p className="mt-1 font-body text-sm text-ink-muted">
-            Cumulative savings over the last 6 months.
+            Cumulative savings over the last 12 months.
           </p>
           <div className="mt-4">
             <SavingsGrowthChart userId={user.id} />
