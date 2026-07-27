@@ -2,42 +2,43 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { BookMarked, Menu, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
-import Image from 'next/image';
 
 const LINKS = [
-  { href: '#home', label: 'Home' },
-  { href: '#about', label: 'About' },
-  { href: '#products', label: 'Products' },
+  { href: '/', label: 'Home' },
+  { href: '/about', label: 'About' },
+  { href: '/products', label: 'Products' },
 ];
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <header className="sticky top-0 z-50 border-b border-rule bg-parchment-soft/95 backdrop-blur">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="#home" className="flex items-center gap-2">
-          <Image 
-          src="/logo/delightlogo.png" // or "/logo.svg"
-          alt="Delight MFB Logo" 
-          width={150} // Adjust based on your logo's actual proportions
-          height={40} 
-          className="h-10 w-auto object-contain" 
-          priority // Tells Next.js to load this immediately since it's above the fold
-        />
+        <Link href="/" className="flex items-center gap-2">
+          <BookMarked className="h-5 w-5 text-cooperative" strokeWidth={2} />
           <span className="font-display text-lg font-semibold tracking-tight text-ink">
-            Delight of God <span className="text-cooperative">CICS</span>
+            Delight <span className="text-cooperative">MFB</span>
           </span>
         </Link>
 
         <ul className="hidden items-center gap-8 md:flex">
           {LINKS.map((link) => (
             <li key={link.href}>
-              <a href={link.href} className="font-body text-sm font-medium text-ink-muted hover:text-cooperative">
+              <Link
+                href={link.href}
+                className={`font-body text-sm font-medium transition-colors ${
+                  pathname === link.href
+                    ? 'text-cooperative'
+                    : 'text-ink-muted hover:text-cooperative'
+                }`}
+              >
                 {link.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -69,9 +70,15 @@ export default function Navbar() {
           <ul className="space-y-1 pt-4">
             {LINKS.map((link) => (
               <li key={link.href}>
-                <a href={link.href} onClick={() => setOpen(false)} className="block rounded-sm px-2 py-2.5 font-body text-sm font-medium text-ink hover:bg-ink/5">
+                <Link
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className={`block rounded-sm px-2 py-2.5 font-body text-sm font-medium ${
+                    pathname === link.href ? 'text-cooperative' : 'text-ink hover:bg-ink/5'
+                  }`}
+                >
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
