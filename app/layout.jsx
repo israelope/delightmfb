@@ -24,9 +24,9 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: 'Delight of God CICS — Cooperative Ledger',
+  title: 'Delight of God Multipurpose Cooperative Society',
   description:
-    'The digital passbook for Delight Thrift & Credit Cooperative Society. Transparent contributions, loans, and membership records.',
+    'The digital passbook for  Delight of God Multipurpose Cooperative Society. Transparent contributions, loans, and membership records.',
     icons: {
     icon: '/logo/delightlogo.png', // The path relative to your public folder
   },

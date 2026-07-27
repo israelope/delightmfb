@@ -3,14 +3,14 @@ import { Landmark } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="border-t border-rule bg-cooperative-dark">
+    <footer className="border-t border-rule bg-cooperative">
       <div className="mx-auto max-w-6xl px-6 py-12">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-2">
               <Landmark className="h-5 w-5 text-brass-light" strokeWidth={1.75} />
               <span className="font-display text-lg font-semibold text-parchment-soft">
-                Delight <span className="text-brass-light">MFB</span>
+                Delight of God <span className="text-brass-light">MCS</span>
               </span>
             </div>
             <p className="mt-3 font-body text-sm text-parchment-soft/70">
@@ -53,8 +53,8 @@ export default function Footer() {
         </div>
 
         <div className="mt-10 flex flex-col gap-3 border-t border-parchment-soft/15 pt-6 text-center font-body text-xs text-parchment-soft/60 sm:flex-row sm:justify-between sm:text-left">
-          <p>&copy; {new Date().getFullYear()} Delight Thrift &amp; Credit Cooperative Society.</p>
-          <p>Internal ledger tool — not a payment platform.</p>
+          <p>&copy; {new Date().getFullYear()} Delight of God Multiputpose Cooperative Society.</p>
+          <p>Internal ledger tool</p>
         </div>
       </div>
     </footer>
