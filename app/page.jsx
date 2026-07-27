@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/features/Navbar';
 import Footer from '@/components/features/Footer';
-import { Menu, X} from 'lucide-react';
 import Button from '@/components/ui/Button';
 import ImagePlaceholder from '@/components/ui/ImagePlaceholder';
 
