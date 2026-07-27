@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Landmark } from 'lucide-react';
+import Image from 'next/image';
 
 export default function Footer() {
   return (
@@ -8,14 +8,20 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-2">
-              <Landmark className="h-5 w-5 text-brass-light" strokeWidth={1.75} />
+              <Image 
+                          src="/logo/delightlogo.png" // or "/logo.svg"
+                          alt="Delight MFB Logo" 
+                          width={150} // Adjust based on your logo's actual proportions
+                          height={40} 
+                          className="h-10 w-auto object-contain" 
+                          priority // Tells Next.js to load this immediately since it's above the fold
+                        />
               <span className="font-display text-lg font-semibold text-parchment-soft">
                 Delight of God <span className="text-brass-light">MCS</span>
               </span>
             </div>
             <p className="mt-3 font-body text-sm text-parchment-soft/70">
-              A digital ledger for our Thrift &amp; Credit Cooperative Society — replacing
-              paper passbooks with a transparent, admin-verified record.
+              our one step towards financial security and growth. Join a community of members who save together, support each other, and grow together.
             </p>
           </div>
 
@@ -45,9 +51,9 @@ export default function Footer() {
           <div>
             <p className="font-body text-sm font-semibold text-parchment-soft">Contact Us</p>
             <ul className="mt-3 space-y-2 font-body text-sm text-parchment-soft/70">
-              <li>[Cooperative office address]</li>
-              <li>[Phone number]</li>
-              <li>[Contact email]</li>
+              <li>Osogbo, Osun State</li>
+              <li>08132285332</li>
+              <li>info@delightofgodmcs.com</li>
             </ul>
           </div>
         </div>

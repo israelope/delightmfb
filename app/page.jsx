@@ -87,9 +87,7 @@ export default function LandingPage() {
               Society
             </h1>
             <p className="mt-6 max-w-md font-body text-base leading-relaxed text-parchment-soft/80">
-              Replacing the paper ledger with a transparent, always-current record —
-              every contribution and every loan, verified by an admin before it
-              reaches your dashboard.
+              Your one step towards financial security and growth. Join a community of members who save together, support each other, and grow together.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link href="/register">

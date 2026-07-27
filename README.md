@@ -126,4 +126,18 @@ Deploy!
 
 Built with 💡 and ☕ for Delight MFB by your favourite dev, Oloyede Israel.
 
-   
+<Image 
+                          src="/logo/delightlogo.png" // or "/logo.svg"
+                          alt="Delight MFB Logo" 
+                          width={150} // Adjust based on your logo's actual proportions
+                          height={40} 
+                          className="h-10 w-auto object-contain" 
+                          priority // Tells Next.js to load this immediately since it's above the fold
+                        />
+
+
+<ImagePlaceholder
+              src="/images/1.png"
+              alt="Delight Cooperative Team"
+              className="aspect-[4/3] w-full"
+            />        
