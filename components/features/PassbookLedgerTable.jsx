@@ -34,6 +34,7 @@ export default function PassbookLedgerTable({ rows }) {
 
   const isSearching = search.trim().length > 0;
   const visibleRows = isSearching ? filteredRows : filteredRows.slice(0, visibleCount);
+  const [inputType, setInputType] = useState('text');
 
   function handleSearchChange(value) {
     setSearch(value);
@@ -42,14 +43,22 @@ export default function PassbookLedgerTable({ rows }) {
 
   return (
     <div>
-      <div className="relative ">
+      <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+        
         <input
-  type="month"
-  value={search}
-  onChange={(e) => handleSearchChange(e.target.value)}
-  className="w-full rounded-sm border border-rule bg-parchment px-3 py-2.5 font-body text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
-/>
+          type={inputType}
+          value={search}
+          placeholder="Search by month, e.g. May or 2026-05…"
+          // 1. When they click the input, instantly turn it into a month picker
+          onFocus={() => setInputType('month')}
+          // 2. When they click away, turn it back to text ONLY if it's still empty
+          onBlur={() => {
+            if (!search) setInputType('text');
+          }}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          className="w-full rounded-sm border border-rule bg-parchment py-2.5 pl-10 pr-3 font-body text-sm text-ink placeholder:text-ink-muted/60 focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+        />
       </div>
 
       {filteredRows.length === 0 ? (
