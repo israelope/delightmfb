@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Receipt, Eye, Check, X, Split } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Receipt, Eye, Check, X, Split, Search } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatDate, formatNaira } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+
+const PAGE_SIZE = 10;
 
 export default function PendingReceipts() {
   const [receipts, setReceipts] = useState([]);
@@ -16,6 +18,9 @@ export default function PendingReceipts() {
   const [error, setError] = useState('');
   const [applying, setApplying] = useState(null);
   const [splits, setSplits] = useState({});
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('pending');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   async function loadReceipts() {
     setLoading(true);
@@ -55,6 +60,10 @@ export default function PendingReceipts() {
   useEffect(() => {
     loadReceipts();
   }, []);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [search, statusFilter]);
 
   async function viewReceipt(filePath) {
     const supabase = createClient();
@@ -164,7 +173,28 @@ export default function PendingReceipts() {
     }
   }
 
-  const pending = receipts.filter((r) => r.status === 'pending');
+  const statusCounts = useMemo(() => {
+    const counts = { all: receipts.length, pending: 0, processed: 0, rejected: 0 };
+    receipts.forEach((r) => {
+      counts[r.status] = (counts[r.status] ?? 0) + 1;
+    });
+    return counts;
+  }, [receipts]);
+
+  const filteredReceipts = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return receipts.filter((r) => {
+      const profile = profilesById[r.user_id];
+      const matchesTerm =
+        !term ||
+        profile?.full_name?.toLowerCase().includes(term) ||
+        profile?.cooperative_id?.toLowerCase().includes(term);
+      const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
+      return matchesTerm && matchesStatus;
+    });
+  }, [receipts, profilesById, search, statusFilter]);
+
+  const visibleReceipts = filteredReceipts.slice(0, visibleCount);
 
   return (
     <div className="rounded-sm border border-rule bg-parchment-soft p-6">
@@ -172,13 +202,45 @@ export default function PendingReceipts() {
         <Receipt className="h-5 w-5 text-cooperative" strokeWidth={1.75} />
         <h2 className="font-display text-lg font-semibold text-ink">
           Payment receipts
-          {pending.length > 0 && <span className="text-brass"> — {pending.length} pending</span>}
+          {statusCounts.pending > 0 && <span className="text-brass"> — {statusCounts.pending} pending</span>}
         </h2>
       </div>
       <p className="mt-1 font-body text-sm text-ink-muted">
         Members upload these with the amount they paid. If they also have an active loan, you
         can split the payment between their savings and the loan before it's logged.
       </p>
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        {[
+          { key: 'pending', label: 'Pending' },
+          { key: 'processed', label: 'Processed' },
+          { key: 'rejected', label: 'Rejected' },
+          { key: 'all', label: 'All' },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setStatusFilter(key)}
+            className={`rounded-full border px-3 py-1.5 font-body text-xs font-medium transition-colors ${
+              statusFilter === key
+                ? 'border-cooperative bg-cooperative text-parchment-soft'
+                : 'border-rule bg-parchment text-ink-muted hover:border-cooperative hover:text-cooperative'
+            }`}
+          >
+            {label} <span className="font-mono">({statusCounts[key] ?? 0})</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="relative mt-3">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+        <input
+          type="text"
+          placeholder="Search by member name or cooperative ID…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-sm border border-rule bg-parchment py-2.5 pl-9 pr-3 font-body text-sm text-ink placeholder:text-ink-muted/60 focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+        />
+      </div>
 
       {error && (
         <p role="alert" className="mt-4 rounded-sm bg-brick/10 px-3 py-2 font-body text-sm text-brick">
@@ -188,124 +250,136 @@ export default function PendingReceipts() {
 
       {loading ? (
         <p className="mt-6 font-body text-sm text-ink-muted">Loading…</p>
-      ) : receipts.length === 0 ? (
-        <p className="mt-6 font-body text-sm text-ink-muted">No receipts uploaded yet.</p>
+      ) : filteredReceipts.length === 0 ? (
+        <p className="mt-6 font-body text-sm text-ink-muted">
+          {receipts.length === 0 ? 'No receipts uploaded yet.' : 'No receipts match your search.'}
+        </p>
       ) : (
-        <ul className="mt-4 divide-y divide-rule">
-          {receipts.map((r) => {
-            const profile = profilesById[r.user_id];
-            const hasLoan = !!activeLoanByUser[r.user_id];
-            const split = splits[r.id];
+        <>
+          <ul className="mt-4 divide-y divide-rule">
+            {visibleReceipts.map((r) => {
+              const profile = profilesById[r.user_id];
+              const hasLoan = !!activeLoanByUser[r.user_id];
+              const split = splits[r.id];
 
-            return (
-              <li key={r.id} className="py-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="font-body text-sm font-medium text-ink">{profile?.full_name}</p>
-                    <p className="font-mono text-xs text-ink-muted">
-                      {r.month_logged} · uploaded {formatDate(r.created_at)}
-                      {r.amount != null && <> · {formatNaira(r.amount)}</>}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge
-                      variant={
-                        r.status === 'pending' ? 'pending' : r.status === 'processed' ? 'available' : 'suspended'
-                      }
-                    >
-                      {r.status}
-                    </Badge>
-                    <Button variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => viewReceipt(r.file_path)}>
-                      <Eye className="h-3.5 w-3.5" strokeWidth={2.25} />
-                      View
-                    </Button>
-                    {r.status === 'pending' && (
-                      <>
-                        <Button
-                          variant="secondary"
-                          className="px-3 py-1.5 text-xs"
-                          onClick={() => (applying === r.id ? setApplying(null) : startApply(r))}
-                        >
-                          <Split className="h-3.5 w-3.5" strokeWidth={2.25} />
-                          Apply payment
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
-                          loading={busyId === r.id}
-                          onClick={() => reject(r.id)}
-                        >
-                          <X className="h-3.5 w-3.5" strokeWidth={2.25} />
-                          Reject
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {applying === r.id && split && (
-                  <div className="mt-3 rounded-sm border border-rule bg-parchment p-4">
-                    <p className="font-body text-xs text-ink-muted">
-                      Total received: <span className="font-mono text-ink">{formatNaira(r.amount ?? 0)}</span>
-                      {hasLoan && (
+              return (
+                <li key={r.id} className="py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="font-body text-sm font-medium text-ink">{profile?.full_name}</p>
+                      <p className="font-mono text-xs text-ink-muted">
+                        {r.month_logged} · uploaded {formatDate(r.created_at)}
+                        {r.amount != null && <> · {formatNaira(r.amount)}</>}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge
+                        variant={
+                          r.status === 'pending' ? 'pending' : r.status === 'processed' ? 'available' : 'suspended'
+                        }
+                      >
+                        {r.status}
+                      </Badge>
+                      <Button variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => viewReceipt(r.file_path)}>
+                        <Eye className="h-3.5 w-3.5" strokeWidth={2.25} />
+                        View
+                      </Button>
+                      {r.status === 'pending' && (
                         <>
-                          {' '}
-                          · Loan balance: {formatNaira(activeLoanByUser[r.user_id].amount_outstanding)}
+                          <Button
+                            variant="secondary"
+                            className="px-3 py-1.5 text-xs"
+                            onClick={() => (applying === r.id ? setApplying(null) : startApply(r))}
+                          >
+                            <Split className="h-3.5 w-3.5" strokeWidth={2.25} />
+                            Apply payment
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
+                            loading={busyId === r.id}
+                            onClick={() => reject(r.id)}
+                          >
+                            <X className="h-3.5 w-3.5" strokeWidth={2.25} />
+                            Reject
+                          </Button>
                         </>
                       )}
-                    </p>
-
-                    <div className="mt-3 flex flex-wrap gap-4">
-                      <label className="flex flex-col gap-1.5">
-                        <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
-                          To savings
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={split.toContribution}
-                          onChange={(e) => updateSplit(r.id, 'toContribution', e.target.value, r.amount ?? 0)}
-                          className="w-32 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
-                        />
-                      </label>
-                      <label className="flex flex-col gap-1.5">
-                        <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
-                          To loan repayment
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          disabled={!hasLoan}
-                          value={split.toLoan}
-                          onChange={(e) => updateSplit(r.id, 'toLoan', e.target.value, r.amount ?? 0)}
-                          className="w-32 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative disabled:opacity-50"
-                        />
-                      </label>
                     </div>
-
-                    {!hasLoan && (
-                      <p className="mt-2 font-body text-xs text-ink-muted">
-                        This member has no active loan, so the full amount goes to savings.
-                      </p>
-                    )}
-
-                    <Button
-                      variant="primary"
-                      className="mt-4 px-3 py-1.5 text-xs"
-                      loading={busyId === r.id}
-                      onClick={() => applyPayment(r)}
-                    >
-                      <Check className="h-3.5 w-3.5" strokeWidth={2.25} />
-                      Confirm & log
-                    </Button>
                   </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+
+                  {applying === r.id && split && (
+                    <div className="mt-3 rounded-sm border border-rule bg-parchment p-4">
+                      <p className="font-body text-xs text-ink-muted">
+                        Total received: <span className="font-mono text-ink">{formatNaira(r.amount ?? 0)}</span>
+                        {hasLoan && (
+                          <>
+                            {' '}
+                            · Loan balance: {formatNaira(activeLoanByUser[r.user_id].amount_outstanding)}
+                          </>
+                        )}
+                      </p>
+
+                      <div className="mt-3 flex flex-wrap gap-4">
+                        <label className="flex flex-col gap-1.5">
+                          <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
+                            To savings
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={split.toContribution}
+                            onChange={(e) => updateSplit(r.id, 'toContribution', e.target.value, r.amount ?? 0)}
+                            className="w-32 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1.5">
+                          <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
+                            To loan repayment
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            disabled={!hasLoan}
+                            value={split.toLoan}
+                            onChange={(e) => updateSplit(r.id, 'toLoan', e.target.value, r.amount ?? 0)}
+                            className="w-32 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative disabled:opacity-50"
+                          />
+                        </label>
+                      </div>
+
+                      {!hasLoan && (
+                        <p className="mt-2 font-body text-xs text-ink-muted">
+                          This member has no active loan, so the full amount goes to savings.
+                        </p>
+                      )}
+
+                      <Button
+                        variant="primary"
+                        className="mt-4 px-3 py-1.5 text-xs"
+                        loading={busyId === r.id}
+                        onClick={() => applyPayment(r)}
+                      >
+                        <Check className="h-3.5 w-3.5" strokeWidth={2.25} />
+                        Confirm & log
+                      </Button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {filteredReceipts.length > visibleCount && (
+            <button
+              onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+              className="mt-3 font-body text-xs font-medium text-cooperative hover:underline"
+            >
+              Show 10 more ({filteredReceipts.length - visibleCount} remaining)
+            </button>
+          )}
+        </>
       )}
     </div>
   );

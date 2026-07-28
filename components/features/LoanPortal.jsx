@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { HandCoins, Send } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { formatNaira } from '@/lib/utils';
+import { formatNaira, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import ProgressBar from '@/components/ui/ProgressBar';
@@ -11,7 +11,7 @@ import LoanEligibilityStatus from '@/components/features/LoanEligibilityStatus';
 import LoanDocumentUpload from '@/components/features/LoanDocumentUpload';
 
 const ELIGIBILITY_MULTIPLIER = 2;
-const OPEN_STATUSES = ['requested', 'approved', 'disbursed'];
+const TOPUP_THRESHOLD = 0.75;
 const LOAN_BADGE_VARIANT = {
   requested: 'pending',
   approved: 'pending',
@@ -68,15 +68,39 @@ export default function LoanPortal({ userId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  const limit = totalSaved * ELIGIBILITY_MULTIPLIER;
-  const hasOpenLoan = loans.some((l) => OPEN_STATUSES.includes(l.status));
+  const pendingLoan = loans.find((l) => ['requested', 'approved'].includes(l.status));
+  const disbursedLoans = loans.filter((l) => l.status === 'disbursed');
+
+  const combinedDisbursed = disbursedLoans.reduce(
+    (acc, l) => ({
+      principal: acc.principal + Number(l.principal),
+      totalRepayable: acc.totalRepayable + Number(l.total_repayable ?? 0),
+      repaid: acc.repaid + Number(l.amount_repaid ?? 0),
+    }),
+    { principal: 0, totalRepayable: 0, repaid: 0 }
+  );
+  const disbursedPct =
+    combinedDisbursed.totalRepayable > 0
+      ? combinedDisbursed.repaid / combinedDisbursed.totalRepayable
+      : 1; // no disbursed loan at all = nothing blocking a top-up
+
+  const needsTopUpProgress = disbursedLoans.length > 0 && disbursedPct < TOPUP_THRESHOLD;
+  const canRequestNew = !pendingLoan && !needsTopUpProgress;
+
+  // Existing outstanding principal (open + disbursed) counts against
+  // the limit, same as the server-side check.
+  const existingPrincipal = loans
+    .filter((l) => ['requested', 'approved', 'disbursed'].includes(l.status))
+    .reduce((sum, l) => sum + Number(l.principal), 0);
+  const limit = totalSaved * ELIGIBILITY_MULTIPLIER - existingPrincipal;
+
   const requestedAmount = Number(amount);
   const isValidAmount = requestedAmount > 0 && requestedAmount <= limit;
   const previewTotal = requestedAmount > 0 ? requestedAmount * (1 + interestRate / 100) : 0;
 
   async function handleRequest(e) {
     e.preventDefault();
-    if (!isValidAmount || hasOpenLoan) return;
+    if (!isValidAmount || !canRequestNew) return;
 
     setSubmitting(true);
     setError('');
@@ -116,16 +140,27 @@ export default function LoanPortal({ userId }) {
         <p className="mt-6 font-body text-sm text-ink-muted">Loading…</p>
       ) : (
         <>
+          {disbursedLoans.length > 1 && (
+            <div className="mt-5 rounded-sm border border-brass/30 bg-brass/10 px-4 py-3">
+              <p className="font-body text-sm text-ink">
+                You currently have {disbursedLoans.length} active loans totaling{' '}
+                <span className="font-medium">{formatNaira(combinedDisbursed.totalRepayable)}</span>,
+                with {formatNaira(combinedDisbursed.repaid)} repaid so far.
+              </p>
+            </div>
+          )}
+
           <div className="mt-5 rounded-sm border border-rule bg-parchment px-4 py-3">
             <p className="font-body text-xs uppercase tracking-wider text-ink-muted">
-              Your borrowing limit
+              Your remaining borrowing limit
             </p>
             <p className="tabular mt-1 font-display text-xl font-semibold text-cooperative">
-              {formatNaira(limit)}
+              {formatNaira(Math.max(0, limit))}
             </p>
             <p className="mt-1 font-body text-xs text-ink-muted">
-              Based on {formatNaira(totalSaved)} in total contributions. Current interest rate:{' '}
-              {interestRate}%.
+              Based on {formatNaira(totalSaved)} in total contributions
+              {existingPrincipal > 0 && <> minus {formatNaira(existingPrincipal)} already borrowed</>}.
+              Current interest rate: {interestRate}%.
             </p>
           </div>
 
@@ -140,13 +175,22 @@ export default function LoanPortal({ userId }) {
             </p>
           )}
 
-          {hasOpenLoan ? (
+          {pendingLoan ? (
             <p className="mt-4 font-body text-sm text-ink-muted">
-              You already have an open loan. You can request a new one once it's cleared.
+              You have a loan request awaiting admin action. You can request another once
+              that's resolved.
             </p>
-          ) : limit === 0 ? (
+          ) : needsTopUpProgress ? (
+            <div className="mt-4">
+              <p className="font-body text-sm text-ink-muted">
+                Repay at least 75% of your current loan before requesting a top-up — you're at{' '}
+                {Math.round(disbursedPct * 100)}% now.
+              </p>
+              <ProgressBar value={disbursedPct * 100} className="mt-2" />
+            </div>
+          ) : limit <= 0 ? (
             <p className="mt-4 font-body text-sm text-ink-muted">
-              Log at least one contribution to unlock loan eligibility.
+              Log more contributions to unlock further loan eligibility.
             </p>
           ) : (
             <div className="mt-4 space-y-3">
@@ -172,7 +216,7 @@ export default function LoanPortal({ userId }) {
                   </label>
                   <Button type="submit" variant="primary" loading={submitting} disabled={!isValidAmount}>
                     <Send className="h-4 w-4" strokeWidth={2.25} />
-                    Request loan
+                    {disbursedLoans.length > 0 ? 'Request top-up' : 'Request loan'}
                   </Button>
                   {requestedAmount > 0 && (
                     <p className="w-full font-body text-xs text-ink-muted">
