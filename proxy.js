@@ -1,7 +1,12 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
-const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password'];
+// Viewable by anyone, logged in or not — never redirected away.
+const OPEN_PATHS = ['/', '/about', '/products'];
+
+// Only for signed-out visitors — a logged-in user gets bounced to their
+// dashboard instead of seeing these.
+const GUEST_ONLY_PATHS = ['/login', '/register', '/forgot-password'];
 
 export async function proxy(request) {
   const path = request.nextUrl.pathname;
@@ -39,11 +44,13 @@ export async function proxy(request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublic = PUBLIC_PATHS.includes(path);
+  const isOpen = OPEN_PATHS.includes(path);
+  const isGuestOnly = GUEST_ONLY_PATHS.includes(path);
 
-  // Not signed in: block anything that isn't public.
+  // Not signed in: open pages and guest-only pages are both fine.
+  // Anything else requires a session.
   if (!user) {
-    if (!isPublic) {
+    if (!isOpen && !isGuestOnly) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
       return NextResponse.redirect(url);
@@ -64,11 +71,15 @@ export async function proxy(request) {
     return profile.role === 'admin' ? '/admin/dashboard' : '/member/dashboard';
   };
 
-  // Signed-in users shouldn't see the login/register pages again.
-  if (isPublic && path !== '/') {
+  // Signed-in users shouldn't see login/register/forgot-password again —
+  // but open pages like /, /about, /products stay visible to everyone.
+  if (isGuestOnly) {
     const url = request.nextUrl.clone();
     url.pathname = destination(profile);
     return NextResponse.redirect(url);
+  }
+  if (isOpen) {
+    return response;
   }
 
   if (profile?.status === 'active') {
