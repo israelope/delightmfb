@@ -8,26 +8,18 @@ import {
   LayoutDashboard,
   Wallet,
   HandCoins,
-  Landmark,
   ShoppingBasket,
   Menu,
   X,
 } from 'lucide-react';
 import SignOutButton from './SignOutButton';
 import NotificationsBell from './NotificationsBell';
-import Image from 'next/image';
 
 const NAV_ITEMS = [
   { href: '/member/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/member/passbook', label: 'Savings', icon: Wallet },
   { href: '/member/loans', label: 'Loans', icon: HandCoins },
-];
-
-// Not built yet — shown disabled so the layout matches the target design,
-// without linking anywhere real. Wire these up once those pages exist.
-const COMING_SOON_ITEMS = [
-  { label: 'Land Investment', icon: Landmark },
-  { label: 'Products', icon: ShoppingBasket },
+  { href: '/member/products', label: 'Products', icon: ShoppingBasket },
 ];
 
 function initials(name) {
@@ -57,18 +49,6 @@ function NavLink({ href, label, icon: Icon, active, onClick }) {
   );
 }
 
-function ComingSoonItem({ label, icon: Icon }) {
-  return (
-    <div className="flex cursor-not-allowed items-center justify-between rounded-sm px-3 py-2.5 text-parchment-soft/40">
-      <span className="flex items-center gap-2.5 font-body text-sm">
-        <Icon className="h-4 w-4" strokeWidth={1.75} />
-        {label}
-      </span>
-      <span className="font-mono text-[10px] uppercase tracking-wide">Soon</span>
-    </div>
-  );
-}
-
 function ProfileCard({ fullName, cooperativeId }) {
   return (
     <div className="flex items-center gap-3 rounded-sm bg-parchment-soft/10 px-3 py-3">
@@ -92,16 +72,9 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
       {/* Mobile top bar */}
       <div className="flex items-center justify-between border-b border-rule bg-cooperative-dark px-4 py-3 md:hidden">
         <Link href="/member/dashboard" className="flex items-center gap-2">
-          <Image 
-          src="/logo/delightlogo.png" // or "/logo.svg"
-          alt="Delight MFB Logo" 
-          width={150} // Adjust based on your logo's actual proportions
-          height={40} 
-          className="h-10 w-auto object-contain" 
-          priority // Tells Next.js to load this immediately since it's above the fold
-        />
+          <BookMarked className="h-5 w-5 text-brass-light" strokeWidth={2} />
           <span className="font-display text-base font-semibold text-parchment-soft">
-            Delight of God <span className="text-brass-light">MCS</span>
+            Delight <span className="text-brass-light">MFB</span>
           </span>
         </Link>
         <div className="flex items-center gap-4">
@@ -131,11 +104,6 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
               </li>
             ))}
           </ul>
-          <div className="mt-1 space-y-1 border-t border-parchment-soft/10 pt-2">
-            {COMING_SOON_ITEMS.map((item) => (
-              <ComingSoonItem key={item.label} {...item} />
-            ))}
-          </div>
           <div className="mt-3 border-t border-parchment-soft/10 pt-3">
             <SignOutButton tone="dark" />
           </div>
@@ -143,19 +111,12 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:top-0 md:sticky  md:h-screen md:w-64 md:shrink-0 md:flex-col md:justify-between md:bg-cooperative-dark">
+      <aside className="hidden md:flex md:min-h-screen md:w-64 md:shrink-0 md:flex-col md:justify-between md:bg-cooperative-dark">
         <div>
           <Link href="/member/dashboard" className="flex items-center gap-2 px-6 py-6">
-            <Image 
-          src="/logo/delightlogo.png" // or "/logo.svg"
-          alt="Delight MFB Logo" 
-          width={150} // Adjust based on your logo's actual proportions
-          height={40} 
-          className="h-10 w-auto object-contain" 
-          priority // Tells Next.js to load this immediately since it's above the fold
-        />
+            <BookMarked className="h-5 w-5 text-brass-light" strokeWidth={2} />
             <span className="font-display text-lg font-semibold text-parchment-soft">
-              Delight of God <span className="text-brass-light">MCS</span>
+              Delight <span className="text-brass-light">MFB</span>
             </span>
           </Link>
 
@@ -171,11 +132,6 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
                 </li>
               ))}
             </ul>
-            <div className="mt-1 space-y-1 border-t border-parchment-soft/10 pt-2">
-              {COMING_SOON_ITEMS.map((item) => (
-                <ComingSoonItem key={item.label} {...item} />
-              ))}
-            </div>
           </nav>
         </div>
 

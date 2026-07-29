@@ -16,7 +16,10 @@ const STATUS_BADGE = { pending: 'pending', processed: 'available', rejected: 'su
 const STATUS_ICON = { pending: Clock, processed: Check, rejected: X };
 
 export default function ReceiptUpload({ userId }) {
+  const [mode, setMode] = useState('general'); // 'general' | 'goal'
   const [month, setMonth] = useState(currentMonth());
+  const [goals, setGoals] = useState([]);
+  const [selectedGoalId, setSelectedGoalId] = useState('');
   const [amount, setAmount] = useState('');
   const [pendingFile, setPendingFile] = useState(null);
   const [receipts, setReceipts] = useState([]);
@@ -24,21 +27,37 @@ export default function ReceiptUpload({ userId }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
-  async function loadReceipts() {
+  async function loadData() {
     setLoading(true);
     const supabase = createClient();
-    const { data } = await supabase
-      .from('contribution_receipts')
-      .select('id, month_logged, amount, status, created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(10);
-    setReceipts(data ?? []);
+    const [{ data: receiptData }, { data: goalRows }, { data: types }] = await Promise.all([
+      supabase
+        .from('contribution_receipts')
+        .select('id, month_logged, amount, status, created_at, goal_id')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10),
+      supabase
+        .from('member_product_goals')
+        .select('id, product_type_id')
+        .eq('user_id', userId)
+        .eq('status', 'active'),
+      supabase.from('product_types').select('id, name'),
+    ]);
+
+    const nameById = {};
+    (types ?? []).forEach((t) => {
+      nameById[t.id] = t.name;
+    });
+    const goalsWithNames = (goalRows ?? []).map((g) => ({ ...g, name: nameById[g.product_type_id] ?? g.product_type_id }));
+
+    setGoals(goalsWithNames);
+    setReceipts(receiptData ?? []);
     setLoading(false);
   }
 
   useEffect(() => {
-    loadReceipts();
+    loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
@@ -60,6 +79,10 @@ export default function ReceiptUpload({ userId }) {
       setError('Enter how much you paid.');
       return;
     }
+    if (mode === 'goal' && !selectedGoalId) {
+      setError('Choose which product this payment is for.');
+      return;
+    }
 
     setError('');
     setUploading(true);
@@ -78,7 +101,8 @@ export default function ReceiptUpload({ userId }) {
 
       const { error: insertError } = await supabase.from('contribution_receipts').insert({
         user_id: userId,
-        month_logged: month,
+        month_logged: mode === 'general' ? month : null,
+        goal_id: mode === 'goal' ? selectedGoalId : null,
         amount: Number(amount),
         file_path: path,
       });
@@ -87,7 +111,7 @@ export default function ReceiptUpload({ userId }) {
 
       setPendingFile(null);
       setAmount('');
-      await loadReceipts();
+      await loadData();
     } catch (err) {
       setError(err.message ?? 'Could not upload that receipt. Please try again.');
     } finally {
@@ -102,22 +126,71 @@ export default function ReceiptUpload({ userId }) {
         <h2 className="font-display text-lg font-semibold text-ink">Upload a payment receipt</h2>
       </div>
       <p className="mt-1 font-body text-sm text-ink-muted">
-        Made a contribution and want your admin notified? Upload the receipt and enter the
-        amount you paid.
+        Made a payment and want your admin notified? Upload the receipt and enter the amount you
+        paid.
       </p>
 
+      <div className="mt-4 flex gap-2">
+        <button
+          onClick={() => setMode('general')}
+          className={`rounded-full border px-3 py-1.5 font-body text-xs font-medium transition-colors ${
+            mode === 'general'
+              ? 'border-cooperative bg-cooperative text-parchment-soft'
+              : 'border-rule bg-parchment text-ink-muted hover:border-cooperative hover:text-cooperative'
+          }`}
+        >
+          General savings
+        </button>
+        <button
+          onClick={() => setMode('goal')}
+          disabled={goals.length === 0}
+          className={`rounded-full border px-3 py-1.5 font-body text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+            mode === 'goal'
+              ? 'border-cooperative bg-cooperative text-parchment-soft'
+              : 'border-rule bg-parchment text-ink-muted hover:border-cooperative hover:text-cooperative'
+          }`}
+        >
+          Product goal
+        </button>
+      </div>
+      {mode === 'goal' && goals.length === 0 && (
+        <p className="mt-2 font-body text-xs text-ink-muted">
+          You don't have any active product goals yet — start one on the Products page first.
+        </p>
+      )}
+
       <form onSubmit={handleSubmit} className="mt-4 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1.5">
-          <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
-            Month
-          </span>
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
-          />
-        </label>
+        {mode === 'general' ? (
+          <label className="flex flex-col gap-1.5">
+            <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
+              Month
+            </span>
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+            />
+          </label>
+        ) : (
+          <label className="flex flex-col gap-1.5">
+            <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
+              Product
+            </span>
+            <select
+              value={selectedGoalId}
+              onChange={(e) => setSelectedGoalId(e.target.value)}
+              className="rounded-sm border border-rule bg-parchment px-3 py-2 font-body text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+            >
+              <option value="">Select…</option>
+              {goals.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label className="flex flex-col gap-1.5">
           <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
@@ -172,10 +245,8 @@ export default function ReceiptUpload({ userId }) {
             return (
               <li key={r.id} className="flex items-center justify-between">
                 <span className="font-mono text-sm text-ink-muted">
-                  {r.month_logged}
-                  {r.amount != null && (
-                    <span className="ml-2 text-ink">{formatNaira(r.amount)}</span>
-                  )}
+                  {r.goal_id ? 'Product goal' : r.month_logged}
+                  {r.amount != null && <span className="ml-2 text-ink">{formatNaira(r.amount)}</span>}
                 </span>
                 <Badge variant={STATUS_BADGE[r.status]}>
                   <Icon className="mr-1 inline h-3 w-3" />
