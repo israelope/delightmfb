@@ -1,11 +1,10 @@
 import Link from 'next/link';
-import { Wallet, HandCoins, Landmark, ShoppingBasket } from 'lucide-react';
+import { Wallet, HandCoins, ShoppingBasket } from 'lucide-react';
 
 const ACTIONS = [
   { label: 'View Passbook', href: '/member/passbook', icon: Wallet, enabled: true },
   { label: 'Request a Loan', href: '/member/loans', icon: HandCoins, enabled: true },
-  { label: 'Land Investment', href: null, icon: Landmark, enabled: false },
-  { label: 'Cooperative Products', href: null, icon: ShoppingBasket, enabled: false },
+  { label: 'Cooperative Products', href: '/member/Products', icon: ShoppingBasket, enabled: true },
 ];
 
 export default function QuickActions() {
