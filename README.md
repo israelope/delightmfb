@@ -256,15 +256,3 @@ database and must only ever be read server-side.
   logged to a separate audit table — history lives in the affected rows
   themselves (timestamps, status changes) rather than a dedicated audit
   log.
-
-<Image 
-                          src="/logo/delightlogo.png" // or "/logo.svg"
-                          alt="Delight MFB Logo" 
-                          width={150} // Adjust based on your logo's actual proportions
-                          height={40} 
-                          className="h-10 w-auto object-contain" 
-                          priority // Tells Next.js to load this immediately since it's above the fold
-                        />
-
-
-<aside className="hidden md:flex md:top-0 md:sticky  md:h-screen md:w-64 md:shrink-0 md:flex-col md:justify-between md:bg-cooperative-dark">       
