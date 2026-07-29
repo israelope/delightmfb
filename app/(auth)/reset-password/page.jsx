@@ -30,7 +30,7 @@ export default function ResetPasswordPage() {
     setLoading(true);
     const supabase = createClient();
     
-    // This actually changes the password in the database
+    // This  changes the password in the database
     const { error: updateError } = await supabase.auth.updateUser({ password });
 
     if (updateError) {

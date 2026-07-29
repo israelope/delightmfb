@@ -40,7 +40,7 @@ const PRODUCTS = [
     icon: Gift,
     title: 'Christmas Savings',
     body: 'Save a little every month throughout the year so December expenses — travel, gifts, celebrations — are already covered when the season arrives.',
-    src: '/images/christmas.png',
+    src: '/images/Christmas.png',
     alt: 'Christmas savings representation',
   },
   {

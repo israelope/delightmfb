@@ -74,10 +74,9 @@ export default function LoginPage() {
             required
           />
           <button
-            type="button" // Very important so clicking the eye doesn't accidentally submit the form!
+            type="button" 
             onClick={() => setShowPassword((prev) => !prev)}
             aria-label={showPassword ? "Hide password" : "Show password"}
-            // Adjust 'bottom-2.5' or 'bottom-3' slightly depending on how tall your custom Input field is
             className="absolute bottom-2.5 right-3 text-ink-muted transition-colors hover:text-cooperative focus:outline-none"
           >
             {showPassword ? (
