@@ -1,4 +1,4 @@
-you hi# Delight MFB — Cooperative Ledger & Membership Platform
+Delight MFB — Cooperative Ledger & Membership Platform
 
 A digital ledger and light CRM for **Delight Thrift & Credit Cooperative
 Society**, replacing paper passbooks and manual bookkeeping with a
