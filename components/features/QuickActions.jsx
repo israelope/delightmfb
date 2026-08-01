@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { Wallet, HandCoins, ShoppingBasket } from 'lucide-react';
+import { Wallet, HandCoins, ShoppingBasket, UploadCloud } from 'lucide-react';
 
 const ACTIONS = [
   { label: 'View Passbook', href: '/member/passbook', icon: Wallet, enabled: true },
   { label: 'Request a Loan', href: '/member/loans', icon: HandCoins, enabled: true },
   { label: 'Cooperative Products', href: '/member/products', icon: ShoppingBasket, enabled: true },
+  { label: 'Upload Receipt', href: '/member/payments', icon: UploadCloud, enabled: true },
 ];
 
 export default function QuickActions() {
