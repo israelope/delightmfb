@@ -1,4 +1,4 @@
-# Delight MFB — Cooperative Ledger & Membership Platform
+Delight MFB — Cooperative Ledger & Membership Platform
 
 A digital ledger and light CRM for **Delight Thrift & Credit Cooperative
 Society**, replacing paper passbooks and manual bookkeeping with a
@@ -256,3 +256,5 @@ database and must only ever be read server-side.
   logged to a separate audit table — history lives in the affected rows
   themselves (timestamps, status changes) rather than a dedicated audit
   log.
+
+Built with love by Oloyede Israel 
