@@ -29,20 +29,21 @@ export default function ProductGoalsChart({ userId }) {
       const [{ data: goals }, { data: types }] = await Promise.all([
         supabase
           .from('member_product_goals')
-          .select('product_type_id, amount_saved')
+          .select('product_type_id, custom_name, amount_saved')
           .eq('user_id', userId)
           .eq('status', 'active'),
         supabase.from('product_types').select('id, name'),
       ]);
 
       const nameById = {};
-      (types ?? []).forEach((t) => {
-        nameById[t.id] = t.name;
-      });
+      (types ?? []).forEach((t) => (nameById[t.id] = t.name));
 
       const rows = (goals ?? [])
         .filter((g) => Number(g.amount_saved) > 0)
-        .map((g) => ({ name: nameById[g.product_type_id] ?? g.product_type_id, value: Number(g.amount_saved) }));
+        .map((g) => ({
+          name: g.custom_name ?? nameById[g.product_type_id] ?? 'Goal',
+          value: Number(g.amount_saved),
+        }));
 
       setData(rows);
       setLoading(false);
@@ -76,10 +77,7 @@ export default function ProductGoalsChart({ userId }) {
         {data.map((entry, i) => (
           <li key={entry.name} className="flex items-center justify-between">
             <span className="flex items-center gap-2 font-body text-sm text-ink">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: COLORS[i % COLORS.length] }}
-              />
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
               {entry.name}
             </span>
             <span className="tabular font-mono text-sm text-ink-muted">{formatNaira(entry.value)}</span>

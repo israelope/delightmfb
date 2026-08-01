@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import ProductGoalsChart from '@/components/features/ProductGoalsChart';
 import ProductGoalsList from '@/components/features/ProductGoalsList';
-import ReceiptUpload from '@/components/features/ReceiptUpload';
+import ProductGoalsHistory from '@/components/features/ProductGoalsHistory';
+import CommunityGoals from '@/components/features/CommunityGoals';
 
 export default async function MemberProductsPage() {
   const supabase = await createClient();
@@ -15,7 +16,12 @@ export default async function MemberProductsPage() {
     <div>
       <h1 className="font-display text-2xl font-semibold text-ink">Products</h1>
       <p className="mt-1 font-body text-sm text-ink-muted">
-        Save toward a specific goal — education, land, festive celebrations, and more.
+        Save toward a specific goal — education, land, festive celebrations, and more. Upload
+        receipts for these on the{' '}
+        <a href="/member/payments" className="text-cooperative hover:underline">
+          Payments
+        </a>{' '}
+        page.
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -32,7 +38,11 @@ export default async function MemberProductsPage() {
       </div>
 
       <div className="mt-6">
-        <ReceiptUpload userId={user.id} />
+        <CommunityGoals />
+      </div>
+
+      <div className="mt-6">
+        <ProductGoalsHistory userId={user.id} />
       </div>
     </div>
   );

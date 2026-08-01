@@ -13,12 +13,14 @@ export default function PendingReceipts() {
   const [receipts, setReceipts] = useState([]);
   const [profilesById, setProfilesById] = useState({});
   const [activeLoanByUser, setActiveLoanByUser] = useState({});
-  const [goalsByUser, setGoalsByUser] = useState({}); // user_id -> [goal rows with productName]
+  const [goalsByUser, setGoalsByUser] = useState({});
+  const [communityGoals, setCommunityGoals] = useState([]);
+  const [allocationsByReceipt, setAllocationsByReceipt] = useState({});
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState('');
   const [applying, setApplying] = useState(null);
-  const [splits, setSplits] = useState({}); // receipt id -> { savings, loan, goals: { goalId: amount } }
+  const [splits, setSplits] = useState({}); // receipt id -> { savings, loan, goals: {id:amt}, community: {id:amt} }
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('pending');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -32,6 +34,8 @@ export default function PendingReceipts() {
       { data: loanRows },
       { data: goalRows },
       { data: types },
+      { data: community },
+      { data: allocations },
     ] = await Promise.all([
       supabase
         .from('contribution_receipts')
@@ -41,6 +45,8 @@ export default function PendingReceipts() {
       supabase.from('loan_balances').select('*').eq('status', 'disbursed'),
       supabase.from('member_product_goals').select('*').eq('status', 'active'),
       supabase.from('product_types').select('id, name'),
+      supabase.from('community_goals').select('*').eq('status', 'active'),
+      supabase.from('receipt_allocations').select('*'),
     ]);
 
     if (fetchError) {
@@ -50,28 +56,30 @@ export default function PendingReceipts() {
     }
 
     const profileMap = {};
-    (profiles ?? []).forEach((p) => {
-      profileMap[p.id] = p;
-    });
+    (profiles ?? []).forEach((p) => (profileMap[p.id] = p));
     setProfilesById(profileMap);
 
     const loanMap = {};
-    (loanRows ?? []).forEach((l) => {
-      loanMap[l.user_id] = l;
-    });
+    (loanRows ?? []).forEach((l) => (loanMap[l.user_id] = l));
     setActiveLoanByUser(loanMap);
 
     const nameById = {};
-    (types ?? []).forEach((t) => {
-      nameById[t.id] = t.name;
-    });
+    (types ?? []).forEach((t) => (nameById[t.id] = t.name));
     const goalMap = {};
     (goalRows ?? []).forEach((g) => {
-      const withName = { ...g, productName: nameById[g.product_type_id] ?? g.product_type_id };
+      const withName = { ...g, displayName: g.custom_name ?? nameById[g.product_type_id] ?? 'Goal' };
       if (!goalMap[g.user_id]) goalMap[g.user_id] = [];
       goalMap[g.user_id].push(withName);
     });
     setGoalsByUser(goalMap);
+    setCommunityGoals(community ?? []);
+
+    const allocMap = {};
+    (allocations ?? []).forEach((a) => {
+      if (!allocMap[a.receipt_id]) allocMap[a.receipt_id] = [];
+      allocMap[a.receipt_id].push(a);
+    });
+    setAllocationsByReceipt(allocMap);
 
     setReceipts(receiptData ?? []);
     setLoading(false);
@@ -90,7 +98,6 @@ export default function PendingReceipts() {
     const { data: signed, error: signError } = await supabase.storage
       .from('payment-receipts')
       .createSignedUrl(filePath, 60);
-
     if (signError || !signed) {
       setError('Could not open the receipt.');
       return;
@@ -120,52 +127,35 @@ export default function PendingReceipts() {
   }
 
   function startApply(receipt) {
-    const total = Number(receipt.amount ?? 0);
-    const memberGoals = goalsByUser[receipt.user_id] ?? [];
-    const goalAmounts = {};
+    const proposed = allocationsByReceipt[receipt.id] ?? [];
+    const savings = proposed.filter((a) => a.target === 'savings').reduce((s, a) => s + Number(a.amount), 0);
+    const loan = proposed.filter((a) => a.target === 'loan').reduce((s, a) => s + Number(a.amount), 0);
+    const goalAmts = {};
+    proposed.filter((a) => a.target === 'goal').forEach((a) => (goalAmts[a.goal_id] = Number(a.amount)));
+    const communityAmts = {};
+    proposed.filter((a) => a.target === 'community').forEach((a) => (communityAmts[a.community_goal_id] = Number(a.amount)));
 
-    let remaining = total;
-
-    // If this receipt was tagged to a specific goal, default the whole
-    // amount there. Otherwise start everything in "savings" and let the
-    // admin redistribute.
-    if (receipt.goal_id && memberGoals.some((g) => g.id === receipt.goal_id)) {
-      goalAmounts[receipt.goal_id] = total;
-      remaining = 0;
-    }
+    const savingsMonth = proposed.find((a) => a.target === 'savings')?.month_logged ?? new Date().toISOString().slice(0, 7);
 
     setSplits((prev) => ({
       ...prev,
-      [receipt.id]: { savings: remaining, loan: 0, goals: goalAmounts },
+      [receipt.id]: { savings, savingsMonth, loan, goals: goalAmts, community: communityAmts },
     }));
     setApplying(receipt.id);
   }
 
-  function recomputeSavings(receiptId, total, loan, goals) {
-    const allocated = loan + Object.values(goals).reduce((s, v) => s + (Number(v) || 0), 0);
-    return Math.max(0, total - allocated);
-  }
-
-  function updateLoanSplit(receiptId, value, total) {
+  function updateField(receiptId, path, value) {
     setSplits((prev) => {
-      const current = prev[receiptId];
-      const loan = Number(value) || 0;
-      const savings = recomputeSavings(receiptId, total, loan, current.goals);
-      return { ...prev, [receiptId]: { ...current, loan, savings } };
+      const current = { ...prev[receiptId] };
+      if (path === 'savings' || path === 'loan' || path === 'savingsMonth') {
+        current[path] = path === 'savingsMonth' ? value : Number(value) || 0;
+      } else if (path.startsWith('goal:')) {
+        current.goals = { ...current.goals, [path.slice(5)]: Number(value) || 0 };
+      } else if (path.startsWith('community:')) {
+        current.community = { ...current.community, [path.slice(10)]: Number(value) || 0 };
+      }
+      return { ...prev, [receiptId]: current };
     });
-  }
-
-  function updateGoalSplit(receiptId, goalId, value, total) {
-    setSplits((prev) => {
-      const current = prev[receiptId];
-      const goals = { ...current.goals, [goalId]: Number(value) || 0 };
-      const savings = recomputeSavings(receiptId, total, current.loan, goals);
-      return { ...prev, [receiptId]: { ...current, goals, savings } };
-    });
-  }
-
-  function updateSavingsSplit(receiptId, value) {
-    setSplits((prev) => ({ ...prev, [receiptId]: { ...prev[receiptId], savings: Number(value) || 0 } }));
   }
 
   async function applyPayment(receipt) {
@@ -173,7 +163,8 @@ export default function PendingReceipts() {
     if (!split) return;
     const total = Number(receipt.amount ?? 0);
     const goalTotal = Object.values(split.goals).reduce((s, v) => s + (Number(v) || 0), 0);
-    const combined = split.savings + split.loan + goalTotal;
+    const communityTotal = Object.values(split.community).reduce((s, v) => s + (Number(v) || 0), 0);
+    const combined = split.savings + split.loan + goalTotal + communityTotal;
 
     if (Math.round(combined * 100) !== Math.round(total * 100)) {
       setError('The split must add up to the total receipt amount.');
@@ -193,7 +184,7 @@ export default function PendingReceipts() {
           user_id: receipt.user_id,
           amount: split.savings,
           date: new Date().toISOString().slice(0, 10),
-          month_logged: receipt.month_logged ?? new Date().toISOString().slice(0, 7),
+          month_logged: split.savingsMonth,
           logged_by: user?.id,
         });
         if (contribError) throw contribError;
@@ -210,14 +201,26 @@ export default function PendingReceipts() {
         if (repayError) throw repayError;
       }
 
-      for (const [goalId, goalAmount] of Object.entries(split.goals)) {
-        if (Number(goalAmount) > 0) {
+      for (const [goalId, amount] of Object.entries(split.goals)) {
+        if (Number(amount) > 0) {
           const { error: goalError } = await supabase.from('product_goal_contributions').insert({
             goal_id: goalId,
-            amount: Number(goalAmount),
+            amount: Number(amount),
             logged_by: user?.id,
           });
           if (goalError) throw goalError;
+        }
+      }
+
+      for (const [communityGoalId, amount] of Object.entries(split.community)) {
+        if (Number(amount) > 0) {
+          const { error: communityError } = await supabase.from('community_goal_contributions').insert({
+            community_goal_id: communityGoalId,
+            user_id: receipt.user_id,
+            amount: Number(amount),
+            logged_by: user?.id,
+          });
+          if (communityError) throw communityError;
         }
       }
 
@@ -238,9 +241,7 @@ export default function PendingReceipts() {
 
   const statusCounts = useMemo(() => {
     const counts = { all: receipts.length, pending: 0, processed: 0, rejected: 0 };
-    receipts.forEach((r) => {
-      counts[r.status] = (counts[r.status] ?? 0) + 1;
-    });
+    receipts.forEach((r) => (counts[r.status] = (counts[r.status] ?? 0) + 1));
     return counts;
   }, [receipts]);
 
@@ -269,8 +270,8 @@ export default function PendingReceipts() {
         </h2>
       </div>
       <p className="mt-1 font-body text-sm text-ink-muted">
-        Members upload these with the amount they paid. Split a payment across savings, a loan,
-        and any of their product goals before logging it.
+        The split shown below is what the member proposed when they uploaded — review it, adjust
+        if needed, then confirm.
       </p>
 
       <div className="mt-5 flex flex-wrap gap-2">
@@ -332,7 +333,7 @@ export default function PendingReceipts() {
                     <div>
                       <p className="font-body text-sm font-medium text-ink">{profile?.full_name}</p>
                       <p className="font-mono text-xs text-ink-muted">
-                        {r.goal_id ? 'Product goal' : r.month_logged} · uploaded {formatDate(r.created_at)}
+                        uploaded {formatDate(r.created_at)}
                         {r.amount != null && <> · {formatNaira(r.amount)}</>}
                       </p>
                     </div>
@@ -388,7 +389,7 @@ export default function PendingReceipts() {
                             min="0"
                             step="0.01"
                             value={split.savings}
-                            onChange={(e) => updateSavingsSplit(r.id, e.target.value)}
+                            onChange={(e) => updateField(r.id, 'savings', e.target.value)}
                             className="w-28 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                           />
                         </label>
@@ -403,7 +404,7 @@ export default function PendingReceipts() {
                               min="0"
                               step="0.01"
                               value={split.loan}
-                              onChange={(e) => updateLoanSplit(r.id, e.target.value, r.amount ?? 0)}
+                              onChange={(e) => updateField(r.id, 'loan', e.target.value)}
                               className="w-28 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                             />
                           </label>
@@ -412,26 +413,35 @@ export default function PendingReceipts() {
                         {memberGoals.map((g) => (
                           <label key={g.id} className="flex flex-col gap-1.5">
                             <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
-                              To {g.productName}
+                              To {g.displayName}
                             </span>
                             <input
                               type="number"
                               min="0"
                               step="0.01"
                               value={split.goals[g.id] ?? 0}
-                              onChange={(e) => updateGoalSplit(r.id, g.id, e.target.value, r.amount ?? 0)}
+                              onChange={(e) => updateField(r.id, `goal:${g.id}`, e.target.value)}
+                              className="w-28 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+                            />
+                          </label>
+                        ))}
+
+                        {communityGoals.map((g) => (
+                          <label key={g.id} className="flex flex-col gap-1.5">
+                            <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
+                              To {g.name}
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={split.community[g.id] ?? 0}
+                              onChange={(e) => updateField(r.id, `community:${g.id}`, e.target.value)}
                               className="w-28 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                             />
                           </label>
                         ))}
                       </div>
-
-                      {!hasLoan && memberGoals.length === 0 && (
-                        <p className="mt-2 font-body text-xs text-ink-muted">
-                          This member has no active loan or product goals, so the full amount
-                          goes to savings.
-                        </p>
-                      )}
 
                       <Button
                         variant="primary"

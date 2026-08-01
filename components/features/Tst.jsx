@@ -1,0 +1,145 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { LayoutDashboard, Users, KeyRound, Wallet, HandCoins, Receipt, ShoppingBasket, Menu, X, BookMarked } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import SignOutButton from './SignOutButton';
+import Image from 'next/image';
+
+const NAV_ITEMS = [
+  { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/admin/members', label: 'Members', icon: Users },
+  { href: '/admin/invite-codes', label: 'Invite Codes', icon: KeyRound },
+  { href: '/admin/contributions', label: 'Contributions', icon: Wallet },
+  { href: '/admin/loans', label: 'Loans', icon: HandCoins },
+  { href: '/admin/product-goals', label: 'Product Savings', icon: ShoppingBasket },
+  { href: '/admin/receipts', label: 'Receipts', icon: Receipt },
+];
+
+function NavLink({ href, label, icon: Icon, active, badge, onClick }) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={`flex items-center justify-between gap-2.5 rounded-sm px-3 py-2.5 font-body text-sm transition-colors ${
+        active ? 'bg-cooperative text-parchment-soft' : 'text-ink hover:bg-ink/5'
+      }`}
+    >
+      <span className="flex items-center gap-2.5">
+        <Icon className="h-4 w-4" strokeWidth={1.75} />
+        {label}
+      </span>
+      {badge > 0 && (
+        <span
+          className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 font-mono text-[11px] font-semibold ${
+            active ? 'bg-parchment-soft text-cooperative' : 'bg-brick text-parchment-soft'
+          }`}
+        >
+          {badge > 9 ? '9+' : badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+export default function AdminNav({ fullName }) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const [pendingReceipts, setPendingReceipts] = useState(0);
+
+  useEffect(() => {
+    async function loadCount() {
+      const supabase = createClient();
+      const { count } = await supabase
+        .from('contribution_receipts')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      setPendingReceipts(count ?? 0);
+    }
+    loadCount();
+  }, []);
+
+  function badgeFor(href) {
+    return href === '/admin/receipts' ? pendingReceipts : 0;
+  }
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <div className="flex items-center justify-between border-b border-rule bg-parchment-soft px-4 py-3 md:hidden">
+        <Link href="/admin/dashboard" className="flex items-center gap-2">
+          <Image 
+                                    src="/logo/delightlogo.png" // or "/logo.svg"
+                                    alt="Delight MFB Logo" 
+                                    width={150} // Adjust based on your logo's actual proportions
+                                    height={40} 
+                                    className="h-10 w-auto object-contain" 
+                                    priority // Tells Next.js to load this immediately since it's above the fold
+                                  />
+          <span className="font-display text-base font-semibold text-ink">
+            Delight of God <span className="text-cooperative">MCS</span>
+          </span>
+        </Link>
+        <button onClick={() => setOpen((o) => !o)} aria-label="Toggle menu" className="text-ink">
+          {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+      </div>
+
+      {open && (
+        <nav className="border-b border-rule bg-parchment-soft px-4 pb-4 md:hidden">
+          <ul className="space-y-1">
+            {NAV_ITEMS.map((item) => (
+              <li key={item.href}>
+                <NavLink
+                  {...item}
+                  active={pathname === item.href}
+                  badge={badgeFor(item.href)}
+                  onClick={() => setOpen(false)}
+                />
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 border-t border-rule pt-3">
+            <SignOutButton />
+          </div>
+        </nav>
+      )}
+
+      {/* Desktop sidebar */}
+        <aside className="hidden md:flex md:top-0 md:sticky  md:h-screen md:w-64 md:shrink-0 md:flex-col md:justify-between md:border-r md:border-rule md:bg-parchment-soft"> 
+        <div>
+          <Link href="/admin/dashboard" className="flex items-center gap-2 px-6 py-6">
+            <Image 
+                                      src="/logo/delightlogo.png" // or "/logo.svg"
+                                      alt="Delight MFB Logo" 
+                                      width={150} // Adjust based on your logo's actual proportions
+                                      height={40} 
+                                      className="h-10 w-auto object-contain" 
+                                      priority // Tells Next.js to load this immediately since it's above the fold
+                                    />
+            <span className="font-display text-lg font-semibold text-ink">
+              Delight of God <span className="text-cooperative">MCS</span>
+            </span>
+          </Link>
+          <nav className="px-3">
+            <ul className="space-y-1">
+              {NAV_ITEMS.map((item) => (
+                <li key={item.href}>
+                  <NavLink {...item} active={pathname === item.href} badge={badgeFor(item.href)} />
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+        <div className="border-t border-rule px-6 py-5">
+          <p className="truncate font-body text-sm text-ink-muted">{fullName}</p>
+          <div className="mt-2">
+            <SignOutButton />
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
