@@ -14,7 +14,12 @@ export default async function MemberProductsPage() {
 
   return (
     <div>
+      
       <h1 className="font-display text-2xl font-semibold text-ink">Products</h1>
+
+      <div className="my-6">
+        <CommunityGoals />
+      </div>
       <p className="mt-1 font-body text-sm text-ink-muted">
         Save toward a specific goal — education, land, festive celebrations, and more. Upload
         receipts for these on the{' '}
@@ -37,9 +42,7 @@ export default async function MemberProductsPage() {
         </div>
       </div>
 
-      <div className="mt-6">
-        <CommunityGoals />
-      </div>
+      
 
       <div className="mt-6">
         <ProductGoalsHistory userId={user.id} />

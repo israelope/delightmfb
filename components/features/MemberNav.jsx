@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   BookMarked,
   LayoutDashboard,
@@ -12,25 +12,25 @@ import {
   UploadCloud,
   Menu,
   X,
-} from 'lucide-react';
-import SignOutButton from './SignOutButton';
-import NotificationsBell from './NotificationsBell';
-import Image from 'next/image';
+} from "lucide-react";
+import SignOutButton from "./SignOutButton";
+import NotificationsBell from "./NotificationsBell";
+import Image from "next/image";
 
 const NAV_ITEMS = [
-  { href: '/member/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/member/passbook', label: 'Savings', icon: Wallet },
-  { href: '/member/loans', label: 'Loans', icon: HandCoins },
-  { href: '/member/products', label: 'Products', icon: ShoppingBasket },
-  { href: '/member/payments', label: 'Payments', icon: UploadCloud },
+  { href: "/member/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/member/passbook", label: "Savings", icon: Wallet },
+  { href: "/member/loans", label: "Loans", icon: HandCoins },
+  { href: "/member/products", label: "Products", icon: ShoppingBasket },
+  { href: "/member/payments", label: "Payments", icon: UploadCloud },
 ];
 
 function initials(name) {
-  if (!name) return '';
+  if (!name) return "";
   return name
-    .split(' ')
+    .split(" ")
     .map((p) => p[0])
-    .join('')
+    .join("")
     .slice(0, 2)
     .toUpperCase();
 }
@@ -42,8 +42,8 @@ function NavLink({ href, label, icon: Icon, active, onClick }) {
       onClick={onClick}
       className={`flex items-center gap-2.5 rounded-sm px-3 py-2.5 font-body text-sm transition-colors ${
         active
-          ? 'bg-parchment-soft text-cooperative-dark'
-          : 'text-parchment-soft/85 hover:bg-parchment-soft/10'
+          ? "bg-parchment-soft text-cooperative-dark"
+          : "text-parchment-soft/85 hover:bg-parchment-soft/10"
       }`}
     >
       <Icon className="h-4 w-4" strokeWidth={1.75} />
@@ -59,8 +59,12 @@ function ProfileCard({ fullName, cooperativeId }) {
         {initials(fullName)}
       </div>
       <div className="min-w-0">
-        <p className="truncate font-body text-sm font-medium text-parchment-soft">{fullName}</p>
-        <p className="font-mono text-xs text-parchment-soft/70">{cooperativeId}</p>
+        <p className="truncate font-body text-sm font-medium text-parchment-soft">
+          {fullName}
+        </p>
+        <p className="font-mono text-xs text-parchment-soft/70">
+          {cooperativeId}
+        </p>
       </div>
     </div>
   );
@@ -75,16 +79,16 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
       {/* Mobile top bar */}
       <div className="flex items-center justify-between border-b border-rule bg-cooperative-dark px-4 py-3 md:hidden">
         <Link href="/member/dashboard" className="flex items-center gap-2">
-          <Image 
-                                              src="/logo/delightlogo.png" // or "/logo.svg"
-                                              alt="Delight MFB Logo" 
-                                              width={150} // Adjust based on your logo's actual proportions
-                                              height={40} 
-                                              className="h-10 w-auto object-contain" 
-                                              priority // Tells Next.js to load this immediately since it's above the fold
-                                            />
+          <Image
+            src="/logo/delightlogo.png" // or "/logo.svg"
+            alt="Delight MFB Logo"
+            width={150} // Adjust based on your logo's actual proportions
+            height={40}
+            className="h-10 w-auto object-contain"
+            priority // Tells Next.js to load this immediately since it's above the fold
+          />
           <span className="font-display text-base font-semibold text-parchment-soft">
-             Delight of God <span className="text-brass-light">MCS</span>
+            Delight of God <span className="text-brass-light">MCS</span>
           </span>
         </Link>
         <div className="flex items-center gap-4">
@@ -92,7 +96,11 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brass-light font-mono text-xs font-semibold text-ink">
             {initials(fullName)}
           </div>
-          <button onClick={() => setOpen((o) => !o)} aria-label="Toggle menu" className="text-parchment-soft">
+          <button
+            onClick={() => setOpen((o) => !o)}
+            aria-label="Toggle menu"
+            className="text-parchment-soft"
+          >
             {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
@@ -106,7 +114,11 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
           <ul className="mt-3 space-y-1">
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
-                <NavLink {...item} active={pathname === item.href} onClick={() => setOpen(false)} />
+                <NavLink
+                  {...item}
+                  active={pathname === item.href}
+                  onClick={() => setOpen(false)}
+                />
               </li>
             ))}
           </ul>
@@ -117,17 +129,20 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:top-0 md:sticky  md:h-screen md:w-64 md:shrink-0 md:flex-col md:justify-between md:border-r md:border-rule md:bg-cooperative-dark"> 
+      <aside className="hidden md:flex md:top-0 md:sticky  md:h-screen md:w-64 md:shrink-0 md:flex-col md:justify-between md:border-r md:border-rule md:bg-cooperative-dark">
         <div>
-          <Link href="/member/dashboard" className="flex items-center gap-2 px-6 py-6">
-            <Image 
-                                              src="/logo/delightlogo.png" // or "/logo.svg"
-                                              alt="Delight MFB Logo" 
-                                              width={150} // Adjust based on your logo's actual proportions
-                                              height={40} 
-                                              className="h-10 w-auto object-contain" 
-                                              priority // Tells Next.js to load this immediately since it's above the fold
-                                            />
+          <Link
+            href="/member/dashboard"
+            className="flex items-center gap-2 px-6 py-6"
+          >
+            <Image
+              src="/logo/delightlogo.png" // or "/logo.svg"
+              alt="Delight MFB Logo"
+              width={150} // Adjust based on your logo's actual proportions
+              height={40}
+              className="h-10 w-auto object-contain"
+              priority // Tells Next.js to load this immediately since it's above the fold
+            />
             <span className="font-display text-lg font-semibold text-parchment-soft">
               Delight of God <span className="text-brass-light">MCS</span>
             </span>

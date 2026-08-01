@@ -10,8 +10,8 @@ export default function AdminProductGoalsPage() {
         Manage default targets, log offline payments, and run community goals.
       </p>
       <div className="mt-6 space-y-6">
+         <AdminProductGoalsEditor />
         <ProductTargetSettings />
-        <AdminProductGoalsEditor />
         <AdminCommunityGoals />
       </div>
     </div>
