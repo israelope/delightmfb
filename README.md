@@ -207,7 +207,7 @@ components/
   ui/                 Small reusable primitives (Button, Badge, ProgressBar, …)
   features/           Feature-specific widgets (one file per dashboard section)
 lib/
-  supabase/           Browser / server / service-role Supabase clients
+  
   utils.js            Formatting helpers (currency, dates, relative time)
   fileUpload.js        Client-side image compression + upload validation
 supabase/             SQL migrations, run in order against your project
