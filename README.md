@@ -257,4 +257,5 @@ database and must only ever be read server-side.
   themselves (timestamps, status changes) rather than a dedicated audit
   log.
 
+Thank you for reading 
 
