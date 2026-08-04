@@ -22,12 +22,14 @@ export default function SessionManager() {
   const router = useRouter();
   const [showWarning, setShowWarning] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [signingOut, setSigningOut] = useState(false);
   const idleTimerRef = useRef(null);
   const warningTimerRef = useRef(null);
   const countdownRef = useRef(null);
   const lastActivityRef = useRef(Date.now());
 
   const signOut = useCallback(async () => {
+    setSigningOut(true);
     const supabase = createClient();
     await supabase.auth.signOut();
     router.refresh();
@@ -128,6 +130,7 @@ export default function SessionManager() {
           <Button
             variant="secondary"
             onClick={signOut}
+            loading={signingOut}
             className="flex-1"
           >
             <LogOut className="h-4 w-4" />

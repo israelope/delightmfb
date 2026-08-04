@@ -41,6 +41,8 @@ export default function LoanQueue() {
   const [expanded, setExpanded] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
+  const [viewingId, setViewingId] = useState(null);
+  const [expandingId, setExpandingId] = useState(null);
   const [error, setError] = useState('');
   const [dueDates, setDueDates] = useState({});
   const [rates, setRates] = useState({});
@@ -116,6 +118,7 @@ export default function LoanQueue() {
   }
 
   async function viewDocument(loanId) {
+    setViewingId(loanId);
     const supabase = createClient();
     const { data: doc } = await supabase
       .from('loan_documents')
@@ -125,6 +128,7 @@ export default function LoanQueue() {
 
     if (!doc) {
       setError('No document found for this loan.');
+      setViewingId(null);
       return;
     }
 
@@ -134,9 +138,11 @@ export default function LoanQueue() {
 
     if (signError || !signed) {
       setError('Could not open the document.');
+      setViewingId(null);
       return;
     }
 
+    setViewingId(null);
     window.open(signed.signedUrl, '_blank', 'noopener,noreferrer');
   }
 
@@ -156,7 +162,11 @@ export default function LoanQueue() {
       return;
     }
     setExpanded(loanId);
-    if (!repayments[loanId]) await loadRepayments(loanId);
+    if (!repayments[loanId]) {
+      setExpandingId(loanId);
+      await loadRepayments(loanId);
+      setExpandingId(null);
+    }
   }
 
   async function logRepayment(loan) {
@@ -345,6 +355,7 @@ export default function LoanQueue() {
                     <Button
                       variant="ghost"
                       className="px-3 py-1.5 text-xs"
+                      loading={viewingId === l.loan_id}
                       onClick={() => viewDocument(l.loan_id)}
                     >
                       <FileText className="h-3.5 w-3.5" strokeWidth={2.25} />
@@ -449,6 +460,7 @@ export default function LoanQueue() {
                       <Button
                         variant="secondary"
                         className="px-3 py-1.5 text-xs"
+                        loading={expandingId === l.loan_id}
                         onClick={() => toggleExpand(l.loan_id)}
                       >
                         {expanded === l.loan_id ? (
@@ -540,8 +552,9 @@ export default function LoanQueue() {
                                   {formatNaira(r.amount)}
                                 </span>
                                 <button
+                                  disabled={busyId === r.id}
                                   onClick={() => deleteRepayment(l.loan_id, r.id)}
-                                  className="text-ink-muted hover:text-brick"
+                                  className="text-ink-muted hover:text-brick disabled:opacity-30"
                                   aria-label="Delete repayment"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />

@@ -15,6 +15,7 @@ export default function AdminCommunityGoals() {
   const [target, setTarget] = useState('');
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [closingId, setClosingId] = useState(null);
   const [error, setError] = useState('');
 
   async function load() {
@@ -60,8 +61,10 @@ export default function AdminCommunityGoals() {
   }
 
   async function closeGoal(id) {
+    setClosingId(id);
     const supabase = createClient();
     await supabase.from('community_goals').update({ status: 'closed' }).eq('id', id);
+    setClosingId(null);
     await load();
   }
 
@@ -134,7 +137,7 @@ export default function AdminCommunityGoals() {
                       {g.status}
                     </Badge>
                     {g.status === 'active' && (
-                      <Button variant="ghost" className="px-2.5 py-1 text-xs" onClick={() => closeGoal(g.id)}>
+                      <Button variant="ghost" className="px-2.5 py-1 text-xs" loading={closingId === g.id} onClick={() => closeGoal(g.id)}>
                         Close
                       </Button>
                     )}

@@ -351,7 +351,7 @@ export default function AdminProductGoalsEditor() {
                                   />
                                   {p.type !== 'refund' && (
                                     <button
-                                      disabled={!dirty}
+                                      disabled={!dirty || busyId === p.id}
                                       onClick={() => saveEditedPayment(g.id, p)}
                                       className="text-ink-muted hover:text-cooperative disabled:opacity-30"
                                       aria-label="Save"
@@ -360,8 +360,9 @@ export default function AdminProductGoalsEditor() {
                                     </button>
                                   )}
                                   <button
+                                    disabled={busyId === p.id}
                                     onClick={() => deletePayment(g.id, p.id)}
-                                    className="text-ink-muted hover:text-brick"
+                                    className="text-ink-muted hover:text-brick disabled:opacity-30"
                                     aria-label="Delete"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />

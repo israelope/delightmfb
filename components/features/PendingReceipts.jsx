@@ -18,6 +18,7 @@ export default function PendingReceipts() {
   const [allocationsByReceipt, setAllocationsByReceipt] = useState({});
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
+  const [viewingId, setViewingId] = useState(null);
   const [error, setError] = useState('');
   const [applying, setApplying] = useState(null);
   const [splits, setSplits] = useState({}); // receipt id -> { savings, loan, goals: {id:amt}, community: {id:amt} }
@@ -93,15 +94,18 @@ export default function PendingReceipts() {
     setVisibleCount(PAGE_SIZE);
   }, [search, statusFilter]);
 
-  async function viewReceipt(filePath) {
+  async function viewReceipt(filePath, receiptId) {
+    setViewingId(receiptId);
     const supabase = createClient();
     const { data: signed, error: signError } = await supabase.storage
       .from('payment-receipts')
       .createSignedUrl(filePath, 60);
     if (signError || !signed) {
       setError('Could not open the receipt.');
+      setViewingId(null);
       return;
     }
+    setViewingId(null);
     window.open(signed.signedUrl, '_blank', 'noopener,noreferrer');
   }
 
@@ -345,7 +349,7 @@ export default function PendingReceipts() {
                       >
                         {r.status}
                       </Badge>
-                      <Button variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => viewReceipt(r.file_path)}>
+                      <Button variant="ghost" className="px-3 py-1.5 text-xs" loading={viewingId === r.id} onClick={() => viewReceipt(r.file_path, r.id)}>
                         <Eye className="h-3.5 w-3.5" strokeWidth={2.25} />
                         View
                       </Button>

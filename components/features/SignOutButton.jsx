@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut } from 'lucide-react';
+import { LogOut, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 const TONES = {
@@ -28,7 +28,11 @@ export default function SignOutButton({ tone = 'light' }) {
       disabled={loading}
       className={`inline-flex items-center gap-1.5 font-body text-sm disabled:opacity-50 ${TONES[tone]}`}
     >
-      <LogOut className="h-4 w-4" strokeWidth={1.75} />
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+      ) : (
+        <LogOut className="h-4 w-4" strokeWidth={1.75} />
+      )}
       Sign out
     </button>
   );
