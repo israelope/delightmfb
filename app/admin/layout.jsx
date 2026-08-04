@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import AdminNav from '@/components/features/AdminNav';
+import SessionManager from '@/components/features/SessionManager';
 
 export default async function AdminLayout({ children }) {
   const supabase = await createClient();
@@ -17,6 +18,7 @@ export default async function AdminLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-parchment md:flex">
+      <SessionManager />
       <AdminNav fullName={profile?.full_name} />
       <main className="flex-1 px-6 py-8 md:py-10">
         <div className="mx-auto max-w-5xl">{children}</div>

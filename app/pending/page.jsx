@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import PassbookStamp from '@/components/ui/PassbookStamp';
 import SignOutButton from '@/components/features/SignOutButton';
+import SessionManager from '@/components/features/SessionManager';
 
 export default async function PendingPage() {
   const supabase = await createClient();
@@ -21,6 +22,7 @@ export default async function PendingPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-parchment px-6">
+      <SessionManager />
       <div className="w-full max-w-md text-center">
         <div className="relative mx-auto mb-8 h-32 w-32">
           <PassbookStamp label="AWAITING" state="waiting" className="h-32 w-32" />
