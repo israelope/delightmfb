@@ -17,9 +17,7 @@ export default async function MemberProductsPage() {
       
       <h1 className="font-display text-2xl font-semibold text-ink">Products</h1>
 
-      <div className="my-6">
-        <CommunityGoals />
-      </div>
+      
       <p className="mt-1 font-body text-sm text-ink-muted">
         Save toward a specific goal — education, land, festive celebrations, and more. Upload
         receipts for these on the{' '}
@@ -28,6 +26,10 @@ export default async function MemberProductsPage() {
         </a>{' '}
         page.
       </p>
+
+      <div className="my-6">
+        <CommunityGoals />
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
