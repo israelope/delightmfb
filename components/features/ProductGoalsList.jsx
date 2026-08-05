@@ -141,6 +141,17 @@ export default function ProductGoalsList({ userId, onChange }) {
         </p>
       )}
 
+            {customActiveGoals.length > 0 && (
+        <div className="rounded-sm border border-rule bg-parchment-soft p-5">
+          <h3 className="font-display text-base font-semibold text-ink">Your custom goals</h3>
+          <ul className="mt-4 space-y-3">
+            {customActiveGoals.map((g) => (
+              <GoalRow key={g.id} goal={g} busy={busyId === g.id} onCancel={() => cancelGoal(g)} />
+            ))}
+          </ul>
+        </div>
+      )}
+
       {productTypes.map((product) => {
         const productGoals = goalsByProduct[product.id] ?? [];
         const hasActive = productGoals.length > 0;
@@ -189,16 +200,7 @@ export default function ProductGoalsList({ userId, onChange }) {
         );
       })}
 
-      {customActiveGoals.length > 0 && (
-        <div className="rounded-sm border border-rule bg-parchment-soft p-5">
-          <h3 className="font-display text-base font-semibold text-ink">Your custom goals</h3>
-          <ul className="mt-4 space-y-3">
-            {customActiveGoals.map((g) => (
-              <GoalRow key={g.id} goal={g} busy={busyId === g.id} onCancel={() => cancelGoal(g)} />
-            ))}
-          </ul>
-        </div>
-      )}
+
 
       {/* Start a custom goal */}
       <div className="rounded-sm border border-dashed border-rule bg-parchment p-5">
