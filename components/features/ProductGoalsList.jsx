@@ -284,6 +284,13 @@ function GoalRow({ goal, busy, onCancel }) {
 
   return (
     <li>
+      {/* ADDED: Display the custom name if this is a custom goal */}
+      {goal.custom_name && (
+        <p className="mb-0.5 font-body text-sm font-medium text-ink">
+          {goal.custom_name}
+        </p>
+      )}
+      
       <div className="flex items-center justify-between">
         <span className="tabular font-mono text-xs text-ink-muted">
           {formatNaira(goal.amount_saved)} of {formatNaira(goal.target_amount)}
