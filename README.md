@@ -30,7 +30,7 @@ trustworthy record of their own standing.
 
 ## What This App Does
 
-Delight MFB gives a cooperative society three things a spreadsheet and a
+Delight MCS gives a cooperative society three things a spreadsheet and a
 paper ledger can't:
 
 1. **A single source of truth.** Every contribution, loan, and repayment
