@@ -258,4 +258,5 @@ database and must only ever be read server-side.
   log.
 
 Thank you for reading everything 
+Contact us for more information 
 
