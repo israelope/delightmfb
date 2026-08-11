@@ -31,7 +31,6 @@ export default function ForgotPasswordPage() {
       redirectTo: `${window.location.origin}/auth/confirm?next=/reset-password`,
     });
     
-    setLoading(false);
     setSubmitted(true);
   }
 

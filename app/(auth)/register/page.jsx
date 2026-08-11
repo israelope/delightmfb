@@ -122,7 +122,6 @@ export default function RegisterPage() {
       setCooperativeId(profile?.cooperative_id ?? null);
     }
 
-    setLoading(false);
     setRegistered(true);
   }
 

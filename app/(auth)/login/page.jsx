@@ -27,9 +27,8 @@ export default function LoginPage() {
       password,
     });
 
-    setLoading(false);
-
     if (signInError) {
+      setLoading(false);
       setError("That email and password combination was not recognized.");
       return;
     }

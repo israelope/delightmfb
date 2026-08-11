@@ -41,7 +41,6 @@ export default function ResetPasswordPage() {
 
     // Sign them out of the temporary session so they have to log in normally
     await supabase.auth.signOut();
-    setLoading(false);
     setSuccess(true);
     
     setTimeout(() => router.push('/login'), 2000);
