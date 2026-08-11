@@ -26,9 +26,35 @@ const plexMono = IBM_Plex_Mono({
 export const metadata = {
   title: 'Delight of God Multipurpose Cooperative Society',
   description:
-    'The digital passbook for  Delight of God Multipurpose Cooperative Society. Transparent contributions, loans, and membership records.',
-    icons: {
-    icon: '/logo/delightlogo.png', // The path relative to your public folder
+    'The digital passbook for Delight of God Multipurpose Cooperative Society. Transparent contributions, loans, and membership records in Osun State, Nigeria.',
+  keywords: [
+    'cooperative society',
+    'Osun State',
+    'savings',
+    'loans',
+    'digital passbook',
+    'Delight of God MCS',
+    'financial growth',
+    'Nigeria'
+  ],
+  openGraph: {
+    title: 'Delight of God Multipurpose Cooperative Society',
+    description: 'Secure savings, transparent loans, and digital passbooks for our members.',
+    url: 'https://delofgodmcs.com',
+    siteName: 'Delight of God MCS',
+    images: [
+      {
+        url: '/logo/delightlogo.png', 
+        width: 800,
+        height: 600,
+        alt: 'Delight of God MCS Logo',
+      },
+    ],
+    locale: 'en_NG',
+    type: 'website',
+  },
+  icons: {
+    icon: '/logo/delightlogo.png', 
   },
 };
 
