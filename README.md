@@ -12,7 +12,7 @@ trustworthy record of their own standing.
 
 ---
 
-## Table of Contents
+## Table of Contents.
 
 - [What This App Does](#what-this-app-does)
 - [Tech Stack](#tech-stack)
