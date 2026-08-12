@@ -16,13 +16,18 @@ trustworthy record of their own standing.
 
 - [What This App Does](#what-this-app-does)
 - [Tech Stack](#tech-stack)
+- [Design System](#design-system)
 - [How Membership Works](#how-membership-works)
 - [Member-Facing Features](#member-facing-features)
 - [Admin-Facing Features](#admin-facing-features)
+- [Enhanced Features](#enhanced-features)
 - [Security Model](#security-model)
 - [Database Schema](#database-schema)
+- [Key Database Functions](#key-database-functions)
+- [API Routes](#api-routes)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
+- [Deployment Notes](#deployment-notes)
 - [Environment Variables](#environment-variables)
 - [Known Limitations & Possible Next Steps](#known-limitations--possible-next-steps)
 
@@ -61,6 +66,38 @@ Next.js talks to Supabase directly from Server Components and Client
 Components, with one exception: account deletion, which needs Supabase's
 service-role admin API and runs through a locked-down Next.js API route
 (`/api/admin/delete-user`) instead.
+
+## Design System
+
+The app uses a custom design system inspired by physical cooperative
+passbooks and ledgers:
+
+**Fonts:**
+| Font | Usage |
+|---|---|
+| Fraunces | Display headings, stat numbers, the cooperative name |
+| IBM Plex Sans | Body text, form labels, navigation |
+| IBM Plex Mono | Currency amounts, cooperative IDs, code snippets |
+
+**Color Palette:**
+| Token | Purpose |
+|---|---|
+| `parchment` | Background color — warm off-white, like aged paper |
+| `ink` | Primary text — deep dark brown/black |
+| `cooperative` | Primary brand color — green used for buttons, active states, member UI |
+| `brass` | Accent gold — used for the passbook stamp motif, premium elements |
+| `brick` | Destructive/alert red — used for errors, suspensions, overdue badges |
+| `rule` | Border color — subtle lines that mimic ledger ruling |
+
+**Passbook Stamp Motif:**
+The signature visual element is a custom SVG ink-stamp circle (`PassbookStamp`
+component) that echoes the rubber stamp a cooperative officer presses into a
+physical passbook. It appears in two states:
+- **Live** — brass-colored, solid border, used for active/approved states
+- **Waiting** — faded, dashed border, shown on the pending account screen
+
+This motif bridges the digital experience with the physical passbook tradition
+members already know.
 
 ## How Membership Works
 
@@ -137,6 +174,67 @@ Reachable from a dedicated admin sidebar:
   search by member, and apply a single payment across savings, a loan
   repayment, and multiple product goals in one action.
 
+## Enhanced Features
+
+These features go beyond the basic member/admin workflow and add
+significant depth to the platform:
+
+### Session Management
+- **15-minute idle timeout** with a 60-second warning modal. Tracks
+  mouse movement, keyboard, scroll, touch, and click activity. Users can
+  choose to stay logged in or sign out automatically.
+
+### Registration Safeguards
+- **Email typo detection** — catches common typos like `gamil.com`,
+  `yaho.com`, `hotmal.com` in real-time and suggests the correct
+  domain.
+- **Email confirmation field** — both registration and forgot-password
+  require typing the email twice to prevent typos.
+
+### Goal-Based Savings
+- **Custom goals** — members can create savings goals outside the 6
+  predefined products (e.g., "Generator", "School Fees") with a custom
+  name, target amount, and optional deadline.
+- **Community goals** — cooperative-wide joint savings targets visible
+  to all members, with individual contribution tracking and progress
+  bars.
+- **Goal cancellation with refund** — when a member cancels a product
+  goal, the saved amount is automatically moved to their regular savings
+  via the `cancel_product_goal` RPC.
+- **Goal expiration sweep** — the `finalize_expired_goals` RPC can be
+  called for a single user or all users to auto-expire overdue goals
+  and refund balances.
+
+### Receipt Split Allocation
+A single uploaded receipt can be split across multiple targets in one
+action: general savings (tagged to a specific month), loan repayment,
+multiple product goals, and community goals. The admin validates that
+the split totals match the receipt amount before applying.
+
+### Batch Operations
+- **"Fill all" contribution logging** — admin can type one amount and
+  apply it to every unlogged member at once, instead of entering each
+  one individually.
+
+### Loan Enhancements
+- **Top-up at 75%** — members can request a top-up loan alongside an
+  existing one once that loan is at least 75% repaid.
+- **Consecutive month tracking** — loan eligibility is based on
+  consecutive months of contributions (not just total), enforced at the
+  Postgres trigger level via the `get_loan_eligibility` RPC.
+
+### Admin Safety Guards
+- **Self-deletion blocked** — an admin cannot delete their own account
+  (enforced both client-side and server-side).
+- **Last admin protected** — the system blocks deletion of the last
+  remaining admin account, preventing accidental lockout.
+
+### Visual Design
+- **Passbook stamp motif** — the `PassbookStamp` SVG component echoes
+  the rubber stamp a cooperative officer presses into a physical
+  passbook, bridging the digital experience with the paper tradition
+  members already know.
+
 ## Security Model
 
 - **Row Level Security (RLS)** is enabled on every table. A member can
@@ -182,6 +280,9 @@ Reachable from a dedicated admin sidebar:
 | `product_types` | Catalog of the six savings products and their default targets |
 | `member_product_goals` | A member's enrollment in a product, with their own target and running total |
 | `product_goal_contributions` | Ledger of amounts applied toward a product goal |
+| `receipt_allocations` | Proposed splits on receipts (savings, loan, goal, community) |
+| `community_goals` | Cooperative-wide joint savings targets |
+| `community_goal_contributions` | Individual contributions to community goals |
 | `notifications` | In-app notifications, auto-generated by triggers |
 
 A `loan_balances` view computes each loan's real outstanding balance
@@ -191,6 +292,23 @@ re-derive that math.
 All of the SQL — table definitions, RLS policies, and trigger functions —
 lives in the `supabase/` folder as a series of migration files, meant to
 be run in order in the Supabase SQL Editor.
+
+## Key Database Functions
+
+Several Postgres functions (RPCs) power core business logic:
+
+| Function | Purpose |
+|---|---|
+| `is_admin()` | Returns `true` if the current user has `role = 'admin'`. Used by RLS policies to gate admin-only access. |
+| `get_loan_eligibility(user_id)` | Returns the user's consecutive contribution streak and whether they meet the eligibility threshold (3 or 6 months). |
+| `finalize_expired_goals(target_user_id?)` | Sweeps product goals past their deadline, marks them expired, and refunds balances to regular savings. Can target a single user or all users. |
+| `cancel_product_goal(goal_id)` | Cancels an active goal and refunds the saved amount to the member's regular savings via a trigger. |
+
+**Key Trigger Behaviors:**
+- **Profile field protection** — any attempt to change `role`, `status`, `email`, `cooperative_id`, or `loan_eligibility_months` by a non-admin is silently reverted.
+- **Excess payment redirect** — if a repayment or goal payment exceeds what is owed, the surplus is automatically added to regular savings.
+- **Notification generation** — contributions, repayments, loan status changes, and goal payments each fire a trigger that inserts a row into `notifications`.
+- **Loan balance computation** — the `loan_balances` view recalculates outstanding balances (principal + interest − repayments) so the frontend always shows accurate numbers.
 
 ## Project Structure
 
@@ -214,6 +332,19 @@ supabase/             SQL migrations, run in order against your project
 proxy.js              Route protection: auth state, approval status, role
 ```
 
+## API Routes
+
+The app has a minimal API layer — most data flows directly between
+Next.js and Supabase. The one exception is account deletion:
+
+| Route | Method | Auth | Purpose |
+|---|---|---|---|
+| `/api/admin/delete-user` | POST | Admin only (service-role key) | Permanently deletes a member's auth account and all associated data. Re-verifies the caller is an active admin, blocks self-deletion, blocks deleting the last remaining admin. |
+
+All other admin operations (approving members, logging contributions,
+managing loans, etc.) happen through Supabase client-side calls protected
+by RLS policies — no custom API routes needed.
+
 ## Getting Started
 
 1. Create a Supabase project.
@@ -228,6 +359,29 @@ proxy.js              Route protection: auth state, approval status, role
 6. Bootstrap your first admin account by registering normally with a
    one-off invite code, then promoting yourself to admin directly in the
    Supabase SQL Editor (see comments in the base schema file).
+
+## Deployment Notes
+
+- **Supabase project:** Create a project at
+  [supabase.com](https://supabase.com). The free tier is sufficient for
+  small cooperatives.
+- **Email provider:** In **Authentication → Providers → Email**, turn off
+  "Confirm email" — the app uses admin approval instead of email
+  verification.
+- **SQL migrations:** Run every file in `supabase/` in the Supabase SQL
+  Editor, in the order they were added. Each file documents its
+  dependencies at the top.
+- **Storage buckets:** The SQL migrations create two private storage
+  buckets (`loan-documents` and `payment-receipts`). Do not make these
+  public — access is controlled by storage policies.
+- **First admin:** After deploying, register with a one-off invite code,
+  then run this in the SQL Editor to make yourself an admin:
+  ```sql
+  UPDATE profiles SET role = 'admin' WHERE email = 'your@email.com';
+  ```
+- **Hosting:** Deploy the Next.js app to Vercel, Netlify, or any
+  Node.js hosting. Set the three environment variables in your hosting
+  dashboard.
 
 ## Environment Variables
 
