@@ -1,4 +1,5 @@
 import InterestRateSettings from '@/components/features/InterestRateSettings';
+import DirectLoanCreator from '@/components/features/DirectLoanCreator';
 import LoanQueue from '@/components/features/LoanQueue';
 
 export default function AdminLoansPage() {
@@ -10,6 +11,7 @@ export default function AdminLoansPage() {
       </p>
       <div className="mt-6 space-y-6">
         <InterestRateSettings />
+        <DirectLoanCreator />
         <LoanQueue />
       </div>
     </div>
