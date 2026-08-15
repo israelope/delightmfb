@@ -87,12 +87,13 @@ export default function LoanPortal({ userId }) {
   const needsTopUpProgress = disbursedLoans.length > 0 && disbursedPct < TOPUP_THRESHOLD;
   const canRequestNew = !pendingLoan && !needsTopUpProgress;
 
-  // Existing outstanding principal (open + disbursed) counts against
-  // the limit, same as the server-side check.
-  const existingPrincipal = loans
-    .filter((l) => ['requested', 'approved', 'disbursed'].includes(l.status))
-    .reduce((sum, l) => sum + Number(l.principal), 0);
-  const limit = totalSaved * ELIGIBILITY_MULTIPLIER - existingPrincipal;
+  // Outstanding balance (includes interest, subtracts repayments)
+  // from disbursed loans counts against the limit.
+  const outstandingBalance = disbursedLoans.reduce(
+    (sum, l) => sum + Number(l.amount_outstanding ?? 0),
+    0
+  );
+  const limit = Math.max(0, (totalSaved - outstandingBalance) * ELIGIBILITY_MULTIPLIER);
 
   const requestedAmount = Number(amount);
   const isValidAmount = requestedAmount > 0 && requestedAmount <= limit;
@@ -130,7 +131,7 @@ export default function LoanPortal({ userId }) {
         <div>
           <h2 className="font-display text-lg font-semibold text-ink">Loans</h2>
           <p className="mt-1 font-body text-sm text-ink-muted">
-            Borrow up to {ELIGIBILITY_MULTIPLIER}x your total contributions.
+            Borrow up to {ELIGIBILITY_MULTIPLIER}x your available balance.
           </p>
         </div>
         <HandCoins className="h-5 w-5 text-cooperative" strokeWidth={1.75} />
@@ -159,7 +160,7 @@ export default function LoanPortal({ userId }) {
             </p>
             <p className="mt-1 font-body text-xs text-ink-muted">
               Based on {formatNaira(totalSaved)} in total contributions
-              {existingPrincipal > 0 && <> minus {formatNaira(existingPrincipal)} already borrowed</>}.
+              {outstandingBalance > 0 && <> minus {formatNaira(outstandingBalance)} outstanding loan balance</>}.
               Current interest rate: {interestRate}%.
             </p>
           </div>
