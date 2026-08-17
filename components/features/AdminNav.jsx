@@ -89,7 +89,7 @@ export default function AdminNav({ fullName }) {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="flex items-center justify-between border-b border-rule bg-parchment-soft px-4 py-3 md:hidden">
+      <div className="fixed top-0 inset-x-0 z-50 flex items-center justify-between border-b border-rule bg-parchment-soft px-4 py-3 md:hidden">
         <Link href="/admin/dashboard" className="flex items-center gap-2">
           <Image
             src="/logo/delightlogo.png" // or "/logo.svg"
@@ -113,7 +113,7 @@ export default function AdminNav({ fullName }) {
       </div>
 
       {open && (
-        <nav className="border-b border-rule bg-parchment-soft px-4 pb-4 md:hidden">
+        <nav className="fixed top-14 inset-x-0 z-50 border-b border-rule bg-parchment-soft px-4 pb-4 md:hidden">
           <ul className="space-y-1">
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>

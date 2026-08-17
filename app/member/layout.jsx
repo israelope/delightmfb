@@ -23,7 +23,7 @@ export default async function MemberLayout({ children }) {
       <MemberNav userId={user.id} fullName={profile?.full_name} cooperativeId={profile?.cooperative_id} />
       <div className="flex-1">
         <MemberTopbar userId={user.id} fullName={profile?.full_name} />
-        <main className="px-6 py-8 md:py-10">
+        <main className="px-6 pb-8 md:pb-10 pt-[72px] md:pt-10">
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>
       </div>

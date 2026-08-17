@@ -77,7 +77,7 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="flex items-center justify-between border-b border-rule bg-cooperative-dark px-4 py-3 md:hidden">
+      <div className="fixed top-0 inset-x-0 z-50 flex items-center justify-between border-b border-rule bg-cooperative-dark px-4 py-3 md:hidden">
         <Link href="/member/dashboard" className="flex items-center gap-2">
           <Image
             src="/logo/delightlogo.png" // or "/logo.svg"
@@ -107,7 +107,7 @@ export default function MemberNav({ userId, fullName, cooperativeId }) {
       </div>
 
       {open && (
-        <nav className="border-b border-rule bg-cooperative-dark px-4 pb-4 md:hidden">
+        <nav className="fixed top-14 inset-x-0 z-50 border-b border-rule bg-cooperative-dark px-4 pb-4 md:hidden">
           <div className="pt-3">
             <ProfileCard fullName={fullName} cooperativeId={cooperativeId} />
           </div>
