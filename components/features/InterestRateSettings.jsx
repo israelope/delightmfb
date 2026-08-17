@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Percent, Save, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Button from '@/components/ui/Button';
+import FormattedNumberInput from '@/components/ui/FormattedNumberInput';
 
 export default function InterestRateSettings() {
   const [rate, setRate] = useState('');
@@ -70,12 +71,11 @@ export default function InterestRateSettings() {
             <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
               Rate (%)
             </span>
-            <input
-              type="number"
+            <FormattedNumberInput
               min="0"
               step="0.1"
               value={rate}
-              onChange={(e) => setRate(e.target.value)}
+              onChange={setRate}
               className="w-28 rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
             />
           </label>

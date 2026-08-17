@@ -5,6 +5,7 @@ import { Search, Plus, X, Save, Trash2, UserRound } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatNaira } from '@/lib/utils';
 import Button from '@/components/ui/Button';
+import FormattedNumberInput from '@/components/ui/FormattedNumberInput';
 
 const PAGE_SIZE = 10;
 
@@ -258,12 +259,11 @@ export default function MemberContributionEditor() {
                       >
                         <span className="font-mono text-sm text-ink-muted">{row.month_logged}</span>
                         <div className="flex items-center gap-2">
-                          <input
-                            type="number"
+                          <FormattedNumberInput
                             min="0"
                             step="0.01"
                             value={editValue}
-                            onChange={(e) => updateEditValue(row.id, e.target.value)}
+                            onChange={(val) => updateEditValue(row.id, val)}
                             className="tabular w-32 rounded-sm border border-rule bg-parchment px-3 py-1.5 text-right font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                           />
                           <Button
@@ -316,13 +316,12 @@ export default function MemberContributionEditor() {
                       onChange={(e) => updateRow(row.key, 'month', e.target.value)}
                       className="rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                     />
-                    <input
-                      type="number"
+                    <FormattedNumberInput
                       min="0"
                       step="0.01"
                       placeholder="₦0.00"
                       value={row.amount}
-                      onChange={(e) => updateRow(row.key, 'amount', e.target.value)}
+                      onChange={(val) => updateRow(row.key, 'amount', val)}
                       className="tabular w-32 rounded-sm border border-rule bg-parchment px-3 py-2 text-right font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                     />
                     {alreadyLogged && (

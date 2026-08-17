@@ -15,6 +15,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { formatNaira, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
+import FormattedNumberInput from '@/components/ui/FormattedNumberInput';
 import Badge from '@/components/ui/Badge';
 import ProgressBar from '@/components/ui/ProgressBar';
 
@@ -366,13 +367,12 @@ export default function LoanQueue() {
                       <>
                         <label className="flex items-center gap-1.5">
                           <span className="font-body text-xs text-ink-muted">Interest %</span>
-                          <input
-                            type="number"
+                          <FormattedNumberInput
                             min="0"
                             step="0.1"
                             value={rate}
-                            onChange={(e) =>
-                              setRates((prev) => ({ ...prev, [l.loan_id]: e.target.value }))
+                            onChange={(val) =>
+                              setRates((prev) => ({ ...prev, [l.loan_id]: val }))
                             }
                             className="w-16 rounded-sm border border-rule bg-parchment px-2 py-1.5 font-mono text-xs text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                           />
@@ -419,13 +419,12 @@ export default function LoanQueue() {
                       <>
                         <label className="flex items-center gap-1.5">
                           <span className="font-body text-xs text-ink-muted">Interest %</span>
-                          <input
-                            type="number"
+                          <FormattedNumberInput
                             min="0"
                             step="0.1"
                             value={rate}
-                            onChange={(e) =>
-                              setRates((prev) => ({ ...prev, [l.loan_id]: e.target.value }))
+                            onChange={(val) =>
+                              setRates((prev) => ({ ...prev, [l.loan_id]: val }))
                             }
                             className="w-16 rounded-sm border border-rule bg-parchment px-2 py-1.5 font-mono text-xs text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                           />
@@ -509,14 +508,13 @@ export default function LoanQueue() {
                         <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
                           Log a repayment
                         </span>
-                        <input
-                          type="number"
+                        <FormattedNumberInput
                           min="0"
                           step="0.01"
                           placeholder="₦0.00"
                           value={repayAmounts[l.loan_id] ?? ''}
-                          onChange={(e) =>
-                            setRepayAmounts((prev) => ({ ...prev, [l.loan_id]: e.target.value }))
+                          onChange={(val) =>
+                            setRepayAmounts((prev) => ({ ...prev, [l.loan_id]: val }))
                           }
                           className="w-36 rounded-sm border border-rule bg-parchment-soft px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                         />

@@ -5,6 +5,7 @@ import { Plus, CheckCircle2, XCircle, Clock3, PlusCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatNaira, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
+import FormattedNumberInput from '@/components/ui/FormattedNumberInput';
 import Badge from '@/components/ui/Badge';
 import ProgressBar from '@/components/ui/ProgressBar';
 
@@ -168,12 +169,11 @@ export default function ProductGoalsList({ userId, onChange }) {
 
               {!hasActive && (
                 <div className="flex items-center gap-2">
-                  <input
-                    type="number"
+                  <FormattedNumberInput
                     min="1"
                     step="0.01"
                     value={targets[product.id] ?? ''}
-                    onChange={(e) => setTargets((prev) => ({ ...prev, [product.id]: e.target.value }))}
+                    onChange={(val) => setTargets((prev) => ({ ...prev, [product.id]: val }))}
                     className="w-32 rounded-sm border border-rule bg-parchment px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                   />
                   <Button
@@ -227,12 +227,11 @@ export default function ProductGoalsList({ userId, onChange }) {
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="font-body text-xs text-ink-muted">Target</span>
-            <input
-              type="number"
+            <FormattedNumberInput
               min="1"
               step="0.01"
               value={customTarget}
-              onChange={(e) => setCustomTarget(e.target.value)}
+              onChange={setCustomTarget}
               className="w-32 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
             />
           </label>

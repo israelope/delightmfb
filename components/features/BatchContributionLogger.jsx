@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Save, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Button from '@/components/ui/Button';
+import FormattedNumberInput from '@/components/ui/FormattedNumberInput';
 import { formatNaira } from '@/lib/utils';
 
 function currentMonth() {
@@ -133,13 +134,12 @@ export default function BatchContributionLogger() {
 
       <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-rule pt-5">
         <span className="font-body text-xs text-ink-muted">Apply one amount to everyone unlogged:</span>
-        <input
-          type="number"
+        <FormattedNumberInput
           min="0"
           step="0.01"
           placeholder="₦0.00"
           value={fillAll}
-          onChange={(e) => setFillAll(e.target.value)}
+          onChange={setFillAll}
           className="w-32 rounded-sm border border-rule bg-parchment px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
         />
         <Button variant="secondary" className="px-3 py-1.5 text-xs" onClick={applyToAllEmpty}>
@@ -179,13 +179,12 @@ export default function BatchContributionLogger() {
                     {formatNaira(logged[m.id])} — logged
                   </span>
                 ) : (
-                  <input
-                    type="number"
+                  <FormattedNumberInput
                     min="0"
                     step="0.01"
                     placeholder="₦0.00"
                     value={amounts[m.id] ?? ''}
-                    onChange={(e) => setAmounts((a) => ({ ...a, [m.id]: e.target.value }))}
+                    onChange={(val) => setAmounts((a) => ({ ...a, [m.id]: val }))}
                     className="tabular w-32 rounded-sm border border-rule bg-parchment px-3 py-1.5 text-right font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                   />
                 )}

@@ -5,6 +5,7 @@ import { Users, Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatNaira } from '@/lib/utils';
 import Button from '@/components/ui/Button';
+import FormattedNumberInput from '@/components/ui/FormattedNumberInput';
 import Badge from '@/components/ui/Badge';
 import ProgressBar from '@/components/ui/ProgressBar';
 
@@ -105,12 +106,11 @@ export default function AdminCommunityGoals() {
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="font-body text-xs text-ink-muted">Target</span>
-          <input
-            type="number"
+          <FormattedNumberInput
             min="1"
             step="0.01"
             value={target}
-            onChange={(e) => setTarget(e.target.value)}
+            onChange={setTarget}
             className="w-32 rounded-sm border border-rule bg-parchment px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
           />
         </label>

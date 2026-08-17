@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Save, Package } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Button from '@/components/ui/Button';
+import FormattedNumberInput from '@/components/ui/FormattedNumberInput';
 
 export default function ProductTargetSettings() {
   const [products, setProducts] = useState([]);
@@ -70,12 +71,11 @@ export default function ProductTargetSettings() {
             <li key={p.id} className="flex items-center justify-between gap-3 py-2.5">
               <span className="font-body text-sm text-ink">{p.name}</span>
               <div className="flex items-center gap-2">
-                <input
-                  type="number"
+                <FormattedNumberInput
                   min="0"
                   step="0.01"
                   value={edits[p.id] ?? p.default_target}
-                  onChange={(e) => setEdits((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                  onChange={(val) => setEdits((prev) => ({ ...prev, [p.id]: val }))}
                   className="w-32 rounded-sm border border-rule bg-parchment px-3 py-1.5 text-right font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                 />
                 <Button

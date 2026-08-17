@@ -5,6 +5,7 @@ import { HandCoins, Send } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatNaira, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
+import FormattedNumberInput from '@/components/ui/FormattedNumberInput';
 import Badge from '@/components/ui/Badge';
 import ProgressBar from '@/components/ui/ProgressBar';
 import LoanEligibilityStatus from '@/components/features/LoanEligibilityStatus';
@@ -204,14 +205,13 @@ export default function LoanPortal({ userId }) {
                     <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
                       Amount to request
                     </span>
-                    <input
-                      type="number"
+                    <FormattedNumberInput
                       min="1"
                       max={limit}
                       step="0.01"
                       placeholder="₦0.00"
                       value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
+                      onChange={setAmount}
                       className="w-44 rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                     />
                   </label>

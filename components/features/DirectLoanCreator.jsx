@@ -5,6 +5,7 @@ import { Search, UserRound, Plus, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatNaira } from '@/lib/utils';
 import Button from '@/components/ui/Button';
+import FormattedNumberInput from '@/components/ui/FormattedNumberInput';
 
 function defaultDisbursementDate() {
   return new Date().toISOString().slice(0, 10);
@@ -226,13 +227,12 @@ export default function DirectLoanCreator() {
               <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
                 Principal amount (₦)
               </span>
-              <input
-                type="number"
+              <FormattedNumberInput
                 min="1"
                 step="0.01"
                 placeholder="₦0.00"
                 value={principal}
-                onChange={(e) => setPrincipal(e.target.value)}
+                onChange={setPrincipal}
                 className="rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
               />
             </label>
@@ -241,12 +241,11 @@ export default function DirectLoanCreator() {
               <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
                 Interest rate (%)
               </span>
-              <input
-                type="number"
+              <FormattedNumberInput
                 min="0"
                 step="0.1"
                 value={interestRate}
-                onChange={(e) => setInterestRate(e.target.value)}
+                onChange={setInterestRate}
                 className="rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
               />
             </label>
@@ -291,13 +290,12 @@ export default function DirectLoanCreator() {
               <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
                 Total amount already repaid (₦)
               </span>
-              <input
-                type="number"
+              <FormattedNumberInput
                 min="0"
                 step="0.01"
                 placeholder="₦0.00"
                 value={amountRepaid}
-                onChange={(e) => setAmountRepaid(e.target.value)}
+                onChange={setAmountRepaid}
                 className="rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
               />
             </label>

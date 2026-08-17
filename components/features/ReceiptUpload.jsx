@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { prepareUploadFile } from '@/lib/fileUpload';
 import { formatNaira } from '@/lib/utils';
 import Badge from '@/components/ui/Badge';
+import FormattedNumberInput from '@/components/ui/FormattedNumberInput';
 
 function currentMonth() {
   const d = new Date();
@@ -188,13 +189,12 @@ export default function ReceiptUpload({ userId }) {
             <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
               To savings
             </span>
-            <input
-              type="number"
+            <FormattedNumberInput
               min="0"
               step="0.01"
               placeholder="₦0.00"
               value={savingsAmount}
-              onChange={(e) => setSavingsAmount(e.target.value)}
+              onChange={setSavingsAmount}
               className="w-32 rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
             />
           </label>
@@ -217,13 +217,12 @@ export default function ReceiptUpload({ userId }) {
               <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
                 To loan repayment
               </span>
-              <input
-                type="number"
+              <FormattedNumberInput
                 min="0"
                 step="0.01"
                 placeholder="₦0.00"
                 value={loanAmount}
-                onChange={(e) => setLoanAmount(e.target.value)}
+                onChange={setLoanAmount}
                 className="w-32 rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
               />
             </label>
@@ -239,13 +238,12 @@ export default function ReceiptUpload({ userId }) {
               {goals.map((g) => (
                 <label key={g.id} className="flex flex-col gap-1.5">
                   <span className="font-body text-xs text-ink-muted">{g.displayName}</span>
-                  <input
-                    type="number"
+                  <FormattedNumberInput
                     min="0"
                     step="0.01"
                     placeholder="₦0.00"
                     value={goalAmounts[g.id] ?? ''}
-                    onChange={(e) => setGoalAmounts((prev) => ({ ...prev, [g.id]: e.target.value }))}
+                    onChange={(val) => setGoalAmounts((prev) => ({ ...prev, [g.id]: val }))}
                     className="w-32 rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                   />
                 </label>
@@ -263,13 +261,12 @@ export default function ReceiptUpload({ userId }) {
               {communityGoals.map((g) => (
                 <label key={g.id} className="flex flex-col gap-1.5">
                   <span className="font-body text-xs text-ink-muted">{g.name}</span>
-                  <input
-                    type="number"
+                  <FormattedNumberInput
                     min="0"
                     step="0.01"
                     placeholder="₦0.00"
                     value={communityAmounts[g.id] ?? ''}
-                    onChange={(e) => setCommunityAmounts((prev) => ({ ...prev, [g.id]: e.target.value }))}
+                    onChange={(val) => setCommunityAmounts((prev) => ({ ...prev, [g.id]: val }))}
                     className="w-32 rounded-sm border border-rule bg-parchment px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                   />
                 </label>

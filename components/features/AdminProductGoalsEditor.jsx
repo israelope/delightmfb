@@ -5,6 +5,7 @@ import { Search, Plus, UserRound, Save, Trash2, RefreshCw } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatNaira, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
+import FormattedNumberInput from '@/components/ui/FormattedNumberInput';
 import Badge from '@/components/ui/Badge';
 import ProgressBar from '@/components/ui/ProgressBar';
 
@@ -292,13 +293,12 @@ export default function AdminProductGoalsEditor() {
 
                     {g.status === 'active' && (
                       <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <input
-                          type="number"
+                        <FormattedNumberInput
                           min="0"
                           step="0.01"
                           placeholder="₦0.00"
                           value={amounts[g.id] ?? ''}
-                          onChange={(e) => setAmounts((prev) => ({ ...prev, [g.id]: e.target.value }))}
+                          onChange={(val) => setAmounts((prev) => ({ ...prev, [g.id]: val }))}
                           className="w-32 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                         />
                         <Button variant="primary" className="px-3 py-1.5 text-xs" loading={busyId === g.id} onClick={() => logPayment(g)}>
@@ -340,13 +340,12 @@ export default function AdminProductGoalsEditor() {
                                   {formatDate(p.date)} {p.type === 'refund' && '· refund'}
                                 </span>
                                 <div className="flex items-center gap-2">
-                                  <input
-                                    type="number"
+                                  <FormattedNumberInput
                                     min="0"
                                     step="0.01"
                                     disabled={p.type === 'refund'}
                                     value={editValue}
-                                    onChange={(e) => setEditAmounts((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                                    onChange={(val) => setEditAmounts((prev) => ({ ...prev, [p.id]: val }))}
                                     className="tabular w-24 rounded-sm border border-rule bg-parchment px-2 py-1 text-right font-mono text-xs text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative disabled:opacity-50"
                                   />
                                   {p.type !== 'refund' && (

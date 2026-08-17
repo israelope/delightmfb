@@ -5,6 +5,7 @@ import { Receipt, Eye, Check, X, Split, Search } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatDate, formatNaira } from '@/lib/utils';
 import Button from '@/components/ui/Button';
+import FormattedNumberInput from '@/components/ui/FormattedNumberInput';
 import Badge from '@/components/ui/Badge';
 
 const PAGE_SIZE = 10;
@@ -388,12 +389,11 @@ export default function PendingReceipts() {
                           <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
                             To savings
                           </span>
-                          <input
-                            type="number"
+                          <FormattedNumberInput
                             min="0"
                             step="0.01"
                             value={split.savings}
-                            onChange={(e) => updateField(r.id, 'savings', e.target.value)}
+                            onChange={(val) => updateField(r.id, 'savings', val)}
                             className="w-28 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                           />
                         </label>
@@ -403,12 +403,11 @@ export default function PendingReceipts() {
                             <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
                               To loan repayment
                             </span>
-                            <input
-                              type="number"
+                            <FormattedNumberInput
                               min="0"
                               step="0.01"
                               value={split.loan}
-                              onChange={(e) => updateField(r.id, 'loan', e.target.value)}
+                              onChange={(val) => updateField(r.id, 'loan', val)}
                               className="w-28 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                             />
                           </label>
@@ -419,12 +418,11 @@ export default function PendingReceipts() {
                             <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
                               To {g.displayName}
                             </span>
-                            <input
-                              type="number"
+                            <FormattedNumberInput
                               min="0"
                               step="0.01"
                               value={split.goals[g.id] ?? 0}
-                              onChange={(e) => updateField(r.id, `goal:${g.id}`, e.target.value)}
+                              onChange={(val) => updateField(r.id, `goal:${g.id}`, val)}
                               className="w-28 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                             />
                           </label>
@@ -435,12 +433,11 @@ export default function PendingReceipts() {
                             <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
                               To {g.name}
                             </span>
-                            <input
-                              type="number"
+                            <FormattedNumberInput
                               min="0"
                               step="0.01"
                               value={split.community[g.id] ?? 0}
-                              onChange={(e) => updateField(r.id, `community:${g.id}`, e.target.value)}
+                              onChange={(val) => updateField(r.id, `community:${g.id}`, val)}
                               className="w-28 rounded-sm border border-rule bg-parchment-soft px-3 py-1.5 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                             />
                           </label>
