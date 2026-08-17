@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   BookMarked,
+  Search,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import SignOutButton from "./SignOutButton";
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { href: "/admin/members", label: "Members", icon: Users },
   { href: "/admin/invite-codes", label: "Invite Codes", icon: KeyRound },
   { href: "/admin/contributions", label: "Contributions", icon: Wallet },
+  { href: "/admin/savings-lookup", label: "Savings Lookup", icon: Search },
   { href: "/admin/loans", label: "Loans", icon: HandCoins },
   {
     href: "/admin/product-goals",
