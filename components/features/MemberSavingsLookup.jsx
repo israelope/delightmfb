@@ -1,11 +1,18 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Search, UserRound, PiggyBank, ShoppingBasket, Users, Wallet } from 'lucide-react';
+import { Search, UserRound, PiggyBank, ShoppingBasket, Users, Wallet, TrendingUp, CreditCard, HandCoins } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { formatNaira, formatDate } from '@/lib/utils';
+import { formatNaira } from '@/lib/utils';
 
 const PAGE_SIZE = 10;
+
+const TYPE_FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'Regular Savings', label: 'Regular Savings' },
+  { key: 'Product Goal', label: 'Product Goals' },
+  { key: 'Community Goal', label: 'Community Goals' },
+];
 
 export default function MemberSavingsLookup() {
   const [allMembers, setAllMembers] = useState([]);
@@ -18,6 +25,10 @@ export default function MemberSavingsLookup() {
   const [regular, setRegular] = useState([]);
   const [productRows, setProductRows] = useState([]);
   const [communityRows, setCommunityRows] = useState([]);
+  const [loanBalance, setLoanBalance] = useState(0);
+
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [monthSearch, setMonthSearch] = useState('');
 
   useEffect(() => {
     async function loadMembers() {
@@ -49,10 +60,13 @@ export default function MemberSavingsLookup() {
     setSearch('');
     setError('');
     setVisibleCount(PAGE_SIZE);
+    setTypeFilter('all');
+    setMonthSearch('');
     setLoading(true);
     setRegular([]);
     setProductRows([]);
     setCommunityRows([]);
+    setLoanBalance(0);
 
     const supabase = createClient();
 
@@ -61,6 +75,7 @@ export default function MemberSavingsLookup() {
       { data: goals, error: e2 },
       { data: types, error: e3 },
       { data: community, error: e4 },
+      { data: loans, error: e5 },
     ] = await Promise.all([
       supabase
         .from('contributions')
@@ -76,10 +91,15 @@ export default function MemberSavingsLookup() {
         .from('community_goal_contributions')
         .select('id, community_goal_id, amount')
         .eq('user_id', member.id),
+      supabase
+        .from('loan_balances')
+        .select('amount_outstanding')
+        .eq('user_id', member.id)
+        .in('status', ['approved', 'disbursed']),
     ]);
 
-    if (e1 || e2 || e3 || e4) {
-      setError(e1?.message || e2?.message || e3?.message || e4?.message);
+    if (e1 || e2 || e3 || e4 || e5) {
+      setError(e1?.message || e2?.message || e3?.message || e4?.message || e5?.message);
       setLoading(false);
       return;
     }
@@ -92,6 +112,7 @@ export default function MemberSavingsLookup() {
     });
 
     setRegular(contribs ?? []);
+    setLoanBalance((loans ?? []).reduce((s, l) => s + Number(l.amount_outstanding), 0));
 
     if (goals?.length > 0) {
       const goalIds = goals.map((g) => g.id);
@@ -116,6 +137,8 @@ export default function MemberSavingsLookup() {
   );
   const totalCommunity = communityRows.reduce((s, c) => s + Number(c.amount), 0);
   const grandTotal = totalRegular + totalProduct + totalCommunity;
+  const totalBalance = grandTotal - loanBalance;
+  const borrowLimit = Math.max(0, (grandTotal - loanBalance) * 2);
 
   const ledger = useMemo(() => {
     const rows = [
@@ -149,9 +172,29 @@ export default function MemberSavingsLookup() {
     });
   }, [regular, productRows, communityRows]);
 
-  const visibleLedger = ledger.slice(0, visibleCount);
+  const filteredLedger = useMemo(() => {
+    return ledger.filter((row) => {
+      const matchesType = typeFilter === 'all' || row.type === typeFilter;
+      const term = monthSearch.trim().toLowerCase();
+      const matchesMonth = !term || row.description?.toLowerCase().includes(term);
+      return matchesType && matchesMonth;
+    });
+  }, [ledger, typeFilter, monthSearch]);
 
-  const stats = [
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [typeFilter, monthSearch]);
+
+  const visibleLedger = filteredLedger.slice(0, visibleCount);
+
+  const overviewStats = [
+    { label: 'Total Balance', value: totalBalance, icon: TrendingUp, tone: 'text-cooperative' },
+    { label: 'Savings Balance', value: grandTotal, icon: PiggyBank, tone: 'text-cooperative' },
+    { label: 'Loan Balance', value: loanBalance, icon: CreditCard, tone: 'text-brick' },
+    { label: 'Borrowing Limit', value: borrowLimit, icon: HandCoins, tone: 'text-brass' },
+  ];
+
+  const savingsStats = [
     { label: 'Regular Savings', value: totalRegular, icon: PiggyBank, tone: 'text-cooperative' },
     { label: 'Product Goals', value: totalProduct, icon: ShoppingBasket, tone: 'text-brass' },
     { label: 'Community Goals', value: totalCommunity, icon: Users, tone: 'text-cooperative-dark' },
@@ -218,7 +261,26 @@ export default function MemberSavingsLookup() {
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {stats.map(({ label, value, icon: Icon, tone }) => (
+            {overviewStats.map(({ label, value, icon: Icon, tone }) => (
+              <div key={label} className="rounded-sm border border-rule bg-parchment-soft p-5">
+                <div className="flex items-center justify-between">
+                  <p className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
+                    {label}
+                  </p>
+                  <Icon className={`h-4 w-4 ${tone}`} strokeWidth={1.75} />
+                </div>
+                <p className="tabular mt-3 font-display text-2xl font-semibold text-ink">
+                  {formatNaira(value)}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-6 font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
+            Savings breakdown
+          </p>
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {savingsStats.map(({ label, value, icon: Icon, tone }) => (
               <div key={label} className="rounded-sm border border-rule bg-parchment-soft p-5">
                 <div className="flex items-center justify-between">
                   <p className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
@@ -243,52 +305,91 @@ export default function MemberSavingsLookup() {
               </p>
             ) : (
               <>
-                <div className="mt-4 overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="border-b border-rule text-xs uppercase tracking-wider text-ink-muted">
-                        <th className="pb-2 font-body font-medium">Date</th>
-                        <th className="pb-2 font-body font-medium">Type</th>
-                        <th className="pb-2 font-body font-medium">Description</th>
-                        <th className="pb-2 text-right font-body font-medium">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-rule">
-                      {visibleLedger.map((row) => (
-                        <tr key={`${row.type}-${row.id}`}>
-                          <td className="py-2.5 font-body text-sm text-ink">
-                            {row.date
-                              ? new Date(row.date).toLocaleDateString('en-NG', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                })
-                              : '—'}
-                          </td>
-                          <td className="py-2.5 font-body text-sm text-ink-muted">{row.type}</td>
-                          <td className="py-2.5 font-mono text-sm text-ink-muted">
-                            {row.description}
-                          </td>
-                          <td
-                            className={`tabular py-2.5 text-right font-mono text-sm ${
-                              row.amount < 0 ? 'text-brick' : 'text-ink'
-                            }`}
-                          >
-                            {row.amount < 0 ? '− ' : ''}
-                            {formatNaira(Math.abs(row.amount))}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <div className="relative flex-1 min-w-[200px]">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+                    <input
+                      type="text"
+                      placeholder="Search by month, e.g. May or 2026-07…"
+                      value={monthSearch}
+                      onChange={(e) => setMonthSearch(e.target.value)}
+                      className="w-full rounded-sm border border-rule bg-parchment py-2.5 pl-9 pr-3 font-body text-sm text-ink placeholder:text-ink-muted/60 focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+                    />
+                  </div>
                 </div>
-                {ledger.length > visibleCount && (
-                  <button
-                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                    className="mt-3 font-body text-xs font-medium text-cooperative hover:underline"
-                  >
-                    Show 10 more ({ledger.length - visibleCount} remaining)
-                  </button>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {TYPE_FILTERS.map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setTypeFilter(key)}
+                      className={`rounded-full border px-3 py-1.5 font-body text-xs font-medium transition-colors ${
+                        typeFilter === key
+                          ? 'border-cooperative bg-cooperative text-parchment-soft'
+                          : 'border-rule bg-parchment text-ink-muted hover:border-cooperative hover:text-cooperative'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {filteredLedger.length === 0 ? (
+                  <p className="mt-4 font-body text-sm text-ink-muted">
+                    {monthSearch || typeFilter !== 'all'
+                      ? 'No transactions match your filters.'
+                      : 'No transactions logged yet.'}
+                  </p>
+                ) : (
+                  <>
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="border-b border-rule text-xs uppercase tracking-wider text-ink-muted">
+                            <th className="pb-2 font-body font-medium">Date</th>
+                            <th className="pb-2 font-body font-medium">Type</th>
+                            <th className="pb-2 font-body font-medium">Description</th>
+                            <th className="pb-2 text-right font-body font-medium">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-rule">
+                          {visibleLedger.map((row) => (
+                            <tr key={`${row.type}-${row.id}`}>
+                              <td className="py-2.5 font-body text-sm text-ink">
+                                {row.date
+                                  ? new Date(row.date).toLocaleDateString('en-NG', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    })
+                                  : '—'}
+                              </td>
+                              <td className="py-2.5 font-body text-sm text-ink-muted">{row.type}</td>
+                              <td className="py-2.5 font-mono text-sm text-ink-muted">
+                                {row.description}
+                              </td>
+                              <td
+                                className={`tabular py-2.5 text-right font-mono text-sm ${
+                                  row.amount < 0 ? 'text-brick' : 'text-ink'
+                                }`}
+                              >
+                                {row.amount < 0 ? '− ' : ''}
+                                {formatNaira(Math.abs(row.amount))}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {filteredLedger.length > visibleCount && (
+                      <button
+                        onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                        className="mt-3 font-body text-xs font-medium text-cooperative hover:underline"
+                      >
+                        Show 10 more ({filteredLedger.length - visibleCount} remaining)
+                      </button>
+                    )}
+                  </>
                 )}
               </>
             )}
