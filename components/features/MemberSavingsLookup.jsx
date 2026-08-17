@@ -29,6 +29,7 @@ export default function MemberSavingsLookup() {
 
   const [typeFilter, setTypeFilter] = useState('all');
   const [monthSearch, setMonthSearch] = useState('');
+  const [monthInputType, setMonthInputType] = useState('text');
 
   useEffect(() => {
     async function loadMembers() {
@@ -62,6 +63,7 @@ export default function MemberSavingsLookup() {
     setVisibleCount(PAGE_SIZE);
     setTypeFilter('all');
     setMonthSearch('');
+    setMonthInputType('text');
     setLoading(true);
     setRegular([]);
     setProductRows([]);
@@ -309,10 +311,12 @@ export default function MemberSavingsLookup() {
                   <div className="relative flex-1 min-w-[200px]">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
                     <input
-                      type="text"
-                      placeholder="Search by month, e.g. May or 2026-07…"
+                      type={monthInputType}
+                      placeholder={monthInputType === 'month' ? '' : 'Search by month, e.g. May or 2026-07…'}
                       value={monthSearch}
-                      onChange={(e) => setMonthSearch(e.target.value)}
+                      onFocus={() => setMonthInputType('month')}
+                      onBlur={() => { if (!monthSearch) setMonthInputType('text'); }}
+                      onChange={(e) => { setMonthSearch(e.target.value); setMonthInputType('text'); }}
                       className="w-full rounded-sm border border-rule bg-parchment py-2.5 pl-9 pr-3 font-body text-sm text-ink placeholder:text-ink-muted/60 focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                     />
                   </div>
