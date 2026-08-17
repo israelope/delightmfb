@@ -16,6 +16,7 @@ export default function MemberManagement() {
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   async function loadMembers() {
     setLoading(true);
@@ -123,14 +124,16 @@ export default function MemberManagement() {
 
   const filteredMembers = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return members;
-    return members.filter(
-      (m) =>
+    return members.filter((m) => {
+      const matchesStatus = statusFilter === 'all' || m.status === statusFilter;
+      const matchesSearch =
+        !term ||
         m.full_name?.toLowerCase().includes(term) ||
         m.email?.toLowerCase().includes(term) ||
-        m.cooperative_id?.toLowerCase().includes(term)
-    );
-  }, [members, search]);
+        m.cooperative_id?.toLowerCase().includes(term);
+      return matchesStatus && matchesSearch;
+    });
+  }, [members, search, statusFilter]);
 
   return (
     <div className="mt-8 rounded-sm border border-rule bg-parchment-soft p-6">
@@ -142,10 +145,25 @@ export default function MemberManagement() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Badge variant="available">{counts.active} active</Badge>
-          <Badge variant="pending">{counts.pending} pending</Badge>
-          <Badge variant="suspended">{counts.suspended} suspended</Badge>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: 'all', label: 'All', count: members.length },
+            { key: 'active', label: 'Active', count: counts.active },
+            { key: 'pending', label: 'Pending', count: counts.pending },
+            { key: 'suspended', label: 'Suspended', count: counts.suspended },
+          ].map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => setStatusFilter(key)}
+              className={`rounded-full border px-3 py-1.5 font-body text-xs font-medium transition-colors ${
+                statusFilter === key
+                  ? 'border-cooperative bg-cooperative text-parchment-soft'
+                  : 'border-rule bg-parchment text-ink-muted hover:border-cooperative hover:text-cooperative'
+              }`}
+            >
+              {label} <span className="font-mono">({count})</span>
+            </button>
+          ))}
         </div>
       </div>
 
