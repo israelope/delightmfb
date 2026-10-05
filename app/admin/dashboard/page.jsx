@@ -2,7 +2,7 @@ import AdminStatCards from '@/components/features/AdminStatCards';
 import CollectionsChart from '@/components/features/CollectionsChart';
 import AdminFundAllocationChart from '@/components/features/AdminFundAllocationChart';
 import LoanStatusChart from '@/components/features/LoanStatusChart';
-import PendingActionsCards from '@/components/features/PendingActionsCards';
+import PendingActionsCards from '@/components/features/PendingActionsCards'; 
 
 export default function AdminOverviewPage() {
   return (

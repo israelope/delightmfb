@@ -5,7 +5,7 @@ import { createServiceRoleClient } from '@/lib/supabase/serviceRole';
 export async function POST(request) {
   const supabase = await createClient();
   const {
-    data: { user },
+    data: { user }, 
   } = await supabase.auth.getUser();
 
   if (!user) {

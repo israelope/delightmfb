@@ -18,8 +18,7 @@ export default async function MemberDashboardPage() {
     .from('profiles')
     .select('full_name, cooperative_id, status')
     .eq('id', user.id)
-    .single();
-
+    .single(); 
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-2">
