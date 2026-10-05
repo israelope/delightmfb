@@ -11,6 +11,8 @@ import {
   ChevronUp,
   Search,
   FileText,
+  FileSignature,
+  ShieldX,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatNaira, formatDate } from '@/lib/utils';
@@ -39,10 +41,12 @@ export default function LoanQueue() {
   const [loans, setLoans] = useState([]);
   const [profilesById, setProfilesById] = useState({});
   const [repayments, setRepayments] = useState({});
+  const [bondDocs, setBondDocs] = useState({});
   const [expanded, setExpanded] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [viewingId, setViewingId] = useState(null);
+  const [viewingBondId, setViewingBondId] = useState(null);
   const [expandingId, setExpandingId] = useState(null);
   const [error, setError] = useState('');
   const [dueDates, setDueDates] = useState({});
@@ -58,9 +62,18 @@ export default function LoanQueue() {
     setError('');
     const supabase = createClient();
 
-    const [{ data: balances, error: fetchError }, { data: profiles }] = await Promise.all([
+    const [
+      { data: balances, error: fetchError },
+      { data: profiles },
+      { data: bonds },
+    ] = await Promise.all([
       supabase.from('loan_balances').select('*'),
       supabase.from('profiles').select('id, full_name, cooperative_id'),
+      supabase
+        .from('loan_documents')
+        .select('loan_id, file_path')
+        .eq('document_type', 'bond')
+        .not('loan_id', 'is', null),
     ]);
 
     if (fetchError) {
@@ -74,6 +87,12 @@ export default function LoanQueue() {
       profileMap[p.id] = p;
     });
     setProfilesById(profileMap);
+
+    const bondMap = {};
+    (bonds ?? []).forEach((b) => {
+      if (b.loan_id) bondMap[b.loan_id] = b.file_path;
+    });
+    setBondDocs(bondMap);
 
     const sorted = [...(balances ?? [])].sort(
       (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
@@ -125,10 +144,11 @@ export default function LoanQueue() {
       .from('loan_documents')
       .select('file_path')
       .eq('loan_id', loanId)
+      .eq('document_type', 'application')
       .maybeSingle();
 
     if (!doc) {
-      setError('No document found for this loan.');
+      setError('No application document found for this loan.');
       setViewingId(null);
       return;
     }
@@ -145,6 +165,59 @@ export default function LoanQueue() {
 
     setViewingId(null);
     window.open(signed.signedUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  async function viewBond(loanId) {
+    setViewingBondId(loanId);
+    const supabase = createClient();
+    const { data: doc } = await supabase
+      .from('loan_documents')
+      .select('file_path')
+      .eq('loan_id', loanId)
+      .eq('document_type', 'bond')
+      .maybeSingle();
+
+    if (!doc) {
+      setError('No loan bond found for this loan.');
+      setViewingBondId(null);
+      return;
+    }
+
+    const { data: signed, error: signError } = await supabase.storage
+      .from('loan-documents')
+      .createSignedUrl(doc.file_path, 60);
+
+    if (signError || !signed) {
+      setError('Could not open the loan bond.');
+      setViewingBondId(null);
+      return;
+    }
+
+    setViewingBondId(null);
+    window.open(signed.signedUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  async function rejectBond(loan) {
+    const profile = profilesById[loan.user_id];
+    const confirmed = window.confirm(
+      `Reject the loan bond for ${profile?.full_name} (${formatNaira(loan.principal)})? The member will be able to download a fresh bond and upload a signed copy again.`
+    );
+    if (!confirmed) return;
+
+    setBusyId(loan.loan_id);
+    setError('');
+    const supabase = createClient();
+    const { error: deleteError } = await supabase
+      .from('loan_documents')
+      .delete()
+      .eq('loan_id', loan.loan_id)
+      .eq('document_type', 'bond');
+    setBusyId(null);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    await loadLoans();
   }
 
   async function loadRepayments(loanId) {
@@ -353,6 +426,12 @@ export default function LoanQueue() {
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={BADGE_VARIANT[l.status]}>{l.status}</Badge>
 
+                    {l.status === 'disbursed' && (
+                      <Badge variant={bondDocs[l.loan_id] ? 'available' : 'pending'}>
+                        {bondDocs[l.loan_id] ? 'Bond on file' : 'Bond pending'}
+                      </Badge>
+                    )}
+
                     <Button
                       variant="ghost"
                       className="px-3 py-1.5 text-xs"
@@ -362,6 +441,29 @@ export default function LoanQueue() {
                       <FileText className="h-3.5 w-3.5" strokeWidth={2.25} />
                       Document
                     </Button>
+
+                    {l.status === 'disbursed' && bondDocs[l.loan_id] && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          className="px-3 py-1.5 text-xs"
+                          loading={viewingBondId === l.loan_id}
+                          onClick={() => viewBond(l.loan_id)}
+                        >
+                          <FileSignature className="h-3.5 w-3.5" strokeWidth={2.25} />
+                          Bond
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="px-3 py-1.5 text-xs text-brick hover:bg-brick/5"
+                          loading={busyId === l.loan_id}
+                          onClick={() => rejectBond(l)}
+                        >
+                          <ShieldX className="h-3.5 w-3.5" strokeWidth={2.25} />
+                          Reject bond
+                        </Button>
+                      </>
+                    )}
 
                     {l.status === 'requested' && (
                       <>

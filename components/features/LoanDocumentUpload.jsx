@@ -1,28 +1,35 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileText, Upload, Check } from 'lucide-react';
+import { FileText, Upload, Check, Download, RefreshCw } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { prepareUploadFile } from '@/lib/fileUpload';
 
 export default function LoanDocumentUpload({ userId, onChange }) {
   const [hasDocument, setHasDocument] = useState(false);
+  const [templatePath, setTemplatePath] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
 
   async function checkStatus() {
     setLoading(true);
     const supabase = createClient();
-    const { data } = await supabase
-      .from('loan_documents')
-      .select('id')
-      .eq('user_id', userId)
-      .is('loan_id', null)
-      .limit(1)
-      .maybeSingle();
-    const ready = !!data;
+    const [{ data: doc }, { data: template }] = await Promise.all([
+      supabase
+        .from('loan_documents')
+        .select('id')
+        .eq('user_id', userId)
+        .is('loan_id', null)
+        .eq('document_type', 'application')
+        .limit(1)
+        .maybeSingle(),
+      supabase.from('loan_templates').select('file_path').eq('type', 'application').maybeSingle(),
+    ]);
+    const ready = !!doc;
     setHasDocument(ready);
+    setTemplatePath(template?.file_path ?? null);
     onChange?.(ready);
     setLoading(false);
   }
@@ -31,6 +38,22 @@ export default function LoanDocumentUpload({ userId, onChange }) {
     checkStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
+
+  async function handleDownload() {
+    if (!templatePath) return;
+    setError('');
+    setDownloading(true);
+    const supabase = createClient();
+    const { data: signed, error: signError } = await supabase.storage
+      .from('loan-forms')
+      .createSignedUrl(templatePath, 60);
+    setDownloading(false);
+    if (signError || !signed) {
+      setError('Could not open the loan application form. Please try again.');
+      return;
+    }
+    window.open(signed.signedUrl, '_blank', 'noopener,noreferrer');
+  }
 
   async function handleFile(e) {
     const file = e.target.files?.[0];
@@ -52,8 +75,17 @@ export default function LoanDocumentUpload({ userId, onChange }) {
 
       if (uploadError) throw uploadError;
 
+      const { error: deleteError } = await supabase
+        .from('loan_documents')
+        .delete()
+        .eq('user_id', userId)
+        .is('loan_id', null)
+        .eq('document_type', 'application');
+      if (deleteError) throw deleteError;
+
       const { error: insertError } = await supabase.from('loan_documents').insert({
         user_id: userId,
+        document_type: 'application',
         file_path: path,
         file_size: prepared.size,
       });
@@ -85,10 +117,30 @@ export default function LoanDocumentUpload({ userId, onChange }) {
           Document uploaded and ready.
         </p>
       ) : (
-        <p className="mt-2 font-body text-xs text-ink-muted">
-          Upload a signed PDF or a photo of the signed page stating your intent to request a
-          loan. Images are compressed automatically; PDFs must be under 1MB.
-        </p>
+        <>
+          {templatePath ? (
+            <>
+              <p className="mt-2 font-body text-xs text-ink-muted">
+                Download the loan application form, fill and sign it, then upload the completed
+                copy below. Images are compressed automatically; PDFs must be under 1MB.
+              </p>
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={downloading}
+                className="mt-2 inline-flex items-center gap-1.5 font-body text-xs font-medium text-cooperative underline-offset-2 hover:underline disabled:opacity-50"
+              >
+                <Download className="h-3.5 w-3.5" strokeWidth={2.25} />
+                {downloading ? 'Opening…' : 'Download loan application form'}
+              </button>
+            </>
+          ) : (
+            <p className="mt-2 font-body text-xs text-ink-muted">
+              Upload a signed PDF or a photo of the signed page stating your intent to request a
+              loan. Images are compressed automatically; PDFs must be under 1MB.
+            </p>
+          )}
+        </>
       )}
 
       {error && (
@@ -109,7 +161,11 @@ export default function LoanDocumentUpload({ userId, onChange }) {
           className="hidden"
           disabled={uploading}
         />
-        <Upload className="h-3.5 w-3.5" strokeWidth={2.25} />
+        {uploading ? (
+          <RefreshCw className="h-3.5 w-3.5 animate-spin" strokeWidth={2.25} />
+        ) : (
+          <Upload className="h-3.5 w-3.5" strokeWidth={2.25} />
+        )}
         {uploading ? 'Uploading…' : hasDocument ? 'Replace document' : 'Upload document'}
       </label>
     </div>

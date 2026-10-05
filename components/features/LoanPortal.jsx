@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HandCoins, Send } from 'lucide-react';
+import { HandCoins, Send, Check, ShieldAlert } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatNaira, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
@@ -10,6 +10,7 @@ import Badge from '@/components/ui/Badge';
 import ProgressBar from '@/components/ui/ProgressBar';
 import LoanEligibilityStatus from '@/components/features/LoanEligibilityStatus';
 import LoanDocumentUpload from '@/components/features/LoanDocumentUpload';
+import LoanBondUpload from '@/components/features/LoanBondUpload';
 
 const ELIGIBILITY_MULTIPLIER = 2;
 const TOPUP_THRESHOLD = 0.75;
@@ -32,6 +33,7 @@ export default function LoanPortal({ userId }) {
   const [success, setSuccess] = useState(false);
   const [isMonthsEligible, setIsMonthsEligible] = useState(null);
   const [hasDocument, setHasDocument] = useState(null);
+  const [bondStatus, setBondStatus] = useState({});
 
   async function loadData() {
     setLoading(true);
@@ -42,6 +44,7 @@ export default function LoanPortal({ userId }) {
       { data: contributions, error: contribError },
       { data: loanData, error: loanError },
       { data: settings },
+      { data: docs, error: docsError },
     ] = await Promise.all([
       supabase.from('contributions').select('amount').eq('user_id', userId),
       supabase
@@ -50,10 +53,15 @@ export default function LoanPortal({ userId }) {
         .eq('user_id', userId)
         .order('loan_id', { ascending: false }),
       supabase.from('cooperative_settings').select('default_interest_rate').eq('id', 1).single(),
+      supabase
+        .from('loan_documents')
+        .select('loan_id, document_type')
+        .eq('user_id', userId)
+        .eq('document_type', 'bond'),
     ]);
 
-    if (contribError || loanError) {
-      setError((contribError ?? loanError).message);
+    if (contribError || loanError || docsError) {
+      setError((contribError ?? loanError ?? docsError).message);
       setLoading(false);
       return;
     }
@@ -61,6 +69,12 @@ export default function LoanPortal({ userId }) {
     setTotalSaved((contributions ?? []).reduce((sum, c) => sum + Number(c.amount), 0));
     setLoans(loanData ?? []);
     setInterestRate(settings?.default_interest_rate ?? 0);
+
+    const bondMap = {};
+    (docs ?? []).forEach((d) => {
+      if (d.loan_id) bondMap[d.loan_id] = true;
+    });
+    setBondStatus(bondMap);
     setLoading(false);
   }
 
@@ -86,7 +100,9 @@ export default function LoanPortal({ userId }) {
       : 1; // no disbursed loan at all = nothing blocking a top-up
 
   const needsTopUpProgress = disbursedLoans.length > 0 && disbursedPct < TOPUP_THRESHOLD;
-  const canRequestNew = !pendingLoan && !needsTopUpProgress;
+  const missingBonds = disbursedLoans.filter((l) => !bondStatus[l.loan_id]);
+  const needsBond = missingBonds.length > 0;
+  const canRequestNew = !pendingLoan && !needsTopUpProgress && !needsBond;
 
   // Outstanding balance (includes interest, subtracts repayments)
   // from disbursed loans counts against the limit.
@@ -124,6 +140,10 @@ export default function LoanPortal({ userId }) {
     setAmount('');
     setSuccess(true);
     await loadData();
+  }
+
+  function handleBondChange(loanId, ready) {
+    setBondStatus((prev) => ({ ...prev, [loanId]: ready }));
   }
 
   return (
@@ -190,6 +210,15 @@ export default function LoanPortal({ userId }) {
               </p>
               <ProgressBar value={disbursedPct * 100} className="mt-2" />
             </div>
+          ) : needsBond ? (
+            <div className="mt-4 rounded-sm border border-brick/30 bg-brick/5 px-4 py-3">
+              <p className="flex items-center gap-1.5 font-body text-sm text-brick">
+                <ShieldAlert className="h-4 w-4 shrink-0" strokeWidth={2} />
+                Upload the signed loan bond{missingBonds.length > 1 ? 's' : ''} for your{' '}
+                {missingBonds.length > 1 ? 'active loans' : 'active loan'} before requesting a
+                top-up.
+              </p>
+            </div>
           ) : limit <= 0 ? (
             <p className="mt-4 font-body text-sm text-ink-muted">
               Log more contributions to unlock further loan eligibility.
@@ -248,6 +277,7 @@ export default function LoanPortal({ userId }) {
                     l.total_repayable > 0
                       ? Math.min(100, Math.round((l.amount_repaid / l.total_repayable) * 100))
                       : 0;
+                  const bondReady = !!bondStatus[l.loan_id];
                   return (
                     <li key={l.loan_id} className="rounded-sm border border-rule bg-parchment px-3.5 py-3">
                       <div className="flex items-center justify-between">
@@ -280,7 +310,14 @@ export default function LoanPortal({ userId }) {
                             )}
                           </p>
                         </div>
-                        <Badge variant={LOAN_BADGE_VARIANT[l.status]}>{l.status}</Badge>
+                        <div className="flex flex-col items-end gap-1.5">
+                          <Badge variant={LOAN_BADGE_VARIANT[l.status]}>{l.status}</Badge>
+                          {l.status === 'disbursed' && (
+                            <Badge variant={bondReady ? 'available' : 'pending'}>
+                              {bondReady ? 'Bond on file' : 'Bond pending'}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
 
                       {l.status === 'disbursed' && (
@@ -290,6 +327,25 @@ export default function LoanPortal({ userId }) {
                             {formatNaira(l.amount_repaid)} repaid of {formatNaira(l.total_repayable)} ({pct}%)
                           </p>
                         </div>
+                      )}
+
+                      {l.status === 'disbursed' && !bondReady && (
+                        <div className="mt-3">
+                          <LoanBondUpload
+                            userId={userId}
+                            loanId={l.loan_id}
+                            principal={l.principal}
+                            disbursedAt={l.disbursed_at}
+                            onChange={(ready) => handleBondChange(l.loan_id, ready)}
+                          />
+                        </div>
+                      )}
+
+                      {l.status === 'disbursed' && bondReady && (
+                        <p className="mt-2 flex items-center gap-1.5 font-body text-xs text-cooperative-dark">
+                          <Check className="h-3.5 w-3.5" />
+                          Signed loan bond on file.
+                        </p>
                       )}
                     </li>
                   );
