@@ -37,6 +37,10 @@ function defaultDueDate() {
   return d.toISOString().slice(0, 10);
 }
 
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default function LoanQueue() {
   const [loans, setLoans] = useState([]);
   const [profilesById, setProfilesById] = useState({});
@@ -52,6 +56,7 @@ export default function LoanQueue() {
   const [dueDates, setDueDates] = useState({});
   const [rates, setRates] = useState({});
   const [repayAmounts, setRepayAmounts] = useState({});
+  const [repayDates, setRepayDates] = useState({});
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -249,6 +254,11 @@ export default function LoanQueue() {
       setError('Enter a valid repayment amount.');
       return;
     }
+    const paymentDate = repayDates[loan.loan_id] || todayStr();
+    if (!paymentDate) {
+      setError('Select the payment date.');
+      return;
+    }
     setBusyId(loan.loan_id);
     setError('');
     const supabase = createClient();
@@ -259,6 +269,7 @@ export default function LoanQueue() {
     const { error: insertError } = await supabase.from('loan_repayments').insert({
       loan_id: loan.loan_id,
       amount,
+      date: paymentDate,
       logged_by: user?.id,
     });
 
@@ -268,6 +279,7 @@ export default function LoanQueue() {
       return;
     }
     setRepayAmounts((prev) => ({ ...prev, [loan.loan_id]: '' }));
+    setRepayDates((prev) => ({ ...prev, [loan.loan_id]: todayStr() }));
     await loadRepayments(loan.loan_id);
     await loadLoans();
   }
@@ -619,6 +631,20 @@ export default function LoanQueue() {
                             setRepayAmounts((prev) => ({ ...prev, [l.loan_id]: val }))
                           }
                           className="w-36 rounded-sm border border-rule bg-parchment-soft px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1.5">
+                        <span className="font-body text-xs font-medium uppercase tracking-wider text-ink-muted">
+                          Payment date
+                        </span>
+                        <input
+                          type="date"
+                          value={repayDates[l.loan_id] ?? todayStr()}
+                          max={todayStr()}
+                          onChange={(e) =>
+                            setRepayDates((prev) => ({ ...prev, [l.loan_id]: e.target.value }))
+                          }
+                          className="rounded-sm border border-rule bg-parchment-soft px-3 py-2 font-mono text-sm text-ink focus:border-cooperative focus:outline-none focus:ring-1 focus:ring-cooperative"
                         />
                       </label>
                       <Button
