@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import { FileSignature, Download, Upload, Check, RefreshCw } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { prepareUploadFile } from '@/lib/fileUpload';
+import { downloadStorageFile } from '@/lib/downloadStorageFile';
 import { formatNaira, formatDate } from '@/lib/utils';
 
 export default function LoanBondUpload({ userId, loanId, principal, disbursedAt, onChange }) {
   const [hasBond, setHasBond] = useState(false);
-  const [templatePath, setTemplatePath] = useState(null);
+  const [template, setTemplate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -17,7 +18,7 @@ export default function LoanBondUpload({ userId, loanId, principal, disbursedAt,
   async function checkStatus() {
     setLoading(true);
     const supabase = createClient();
-    const [{ data: bondDoc }, { data: template }] = await Promise.all([
+    const [{ data: bondDoc }, { data: templateRow }] = await Promise.all([
       supabase
         .from('loan_documents')
         .select('id')
@@ -26,11 +27,15 @@ export default function LoanBondUpload({ userId, loanId, principal, disbursedAt,
         .eq('document_type', 'bond')
         .limit(1)
         .maybeSingle(),
-      supabase.from('loan_templates').select('file_path').eq('type', 'bond').maybeSingle(),
+      supabase
+        .from('loan_templates')
+        .select('file_path, file_name')
+        .eq('type', 'bond')
+        .maybeSingle(),
     ]);
     const ready = !!bondDoc;
     setHasBond(ready);
-    setTemplatePath(template?.file_path ?? null);
+    setTemplate(templateRow ?? null);
     onChange?.(ready);
     setLoading(false);
   }
@@ -41,19 +46,22 @@ export default function LoanBondUpload({ userId, loanId, principal, disbursedAt,
   }, [userId, loanId]);
 
   async function handleDownload() {
-    if (!templatePath) return;
+    if (!template?.file_path) return;
     setError('');
     setDownloading(true);
     const supabase = createClient();
-    const { data: signed, error: signError } = await supabase.storage
-      .from('loan-forms')
-      .createSignedUrl(templatePath, 60);
-    setDownloading(false);
-    if (signError || !signed) {
-      setError('Could not open the loan bond form. Please try again.');
-      return;
+    try {
+      await downloadStorageFile(
+        supabase,
+        'loan-forms',
+        template.file_path,
+        template.file_name || 'loan-bond.pdf'
+      );
+    } catch {
+      setError('Could not download the loan bond form. Please try again.');
+    } finally {
+      setDownloading(false);
     }
-    window.open(signed.signedUrl, '_blank', 'noopener,noreferrer');
   }
 
   async function handleFile(e) {
@@ -118,7 +126,7 @@ export default function LoanBondUpload({ userId, loanId, principal, disbursedAt,
             {disbursedAt && <> disbursed on {formatDate(disbursedAt)}</>}. Download the loan bond,
             fill and sign it, then upload the completed copy below.
           </p>
-          {templatePath ? (
+          {template ? (
             <button
               type="button"
               onClick={handleDownload}
@@ -126,7 +134,7 @@ export default function LoanBondUpload({ userId, loanId, principal, disbursedAt,
               className="mt-2.5 inline-flex items-center gap-1.5 font-body text-xs font-medium text-cooperative underline-offset-2 hover:underline disabled:opacity-50"
             >
               <Download className="h-3.5 w-3.5" strokeWidth={2.25} />
-              {downloading ? 'Opening…' : 'Download loan bond form'}
+              {downloading ? 'Downloading…' : 'Download loan bond form'}
             </button>
           ) : (
             <p className="mt-2 font-body text-xs text-brick">

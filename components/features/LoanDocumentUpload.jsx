@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { FileText, Upload, Check, Download, RefreshCw } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { prepareUploadFile } from '@/lib/fileUpload';
+import { downloadStorageFile } from '@/lib/downloadStorageFile';
 
 export default function LoanDocumentUpload({ userId, onChange }) {
   const [hasDocument, setHasDocument] = useState(false);
-  const [templatePath, setTemplatePath] = useState(null);
+  const [template, setTemplate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -16,7 +17,7 @@ export default function LoanDocumentUpload({ userId, onChange }) {
   async function checkStatus() {
     setLoading(true);
     const supabase = createClient();
-    const [{ data: doc }, { data: template }] = await Promise.all([
+    const [{ data: doc }, { data: templateRow }] = await Promise.all([
       supabase
         .from('loan_documents')
         .select('id')
@@ -25,11 +26,15 @@ export default function LoanDocumentUpload({ userId, onChange }) {
         .eq('document_type', 'application')
         .limit(1)
         .maybeSingle(),
-      supabase.from('loan_templates').select('file_path').eq('type', 'application').maybeSingle(),
+      supabase
+        .from('loan_templates')
+        .select('file_path, file_name')
+        .eq('type', 'application')
+        .maybeSingle(),
     ]);
     const ready = !!doc;
     setHasDocument(ready);
-    setTemplatePath(template?.file_path ?? null);
+    setTemplate(templateRow ?? null);
     onChange?.(ready);
     setLoading(false);
   }
@@ -40,19 +45,22 @@ export default function LoanDocumentUpload({ userId, onChange }) {
   }, [userId]);
 
   async function handleDownload() {
-    if (!templatePath) return;
+    if (!template?.file_path) return;
     setError('');
     setDownloading(true);
     const supabase = createClient();
-    const { data: signed, error: signError } = await supabase.storage
-      .from('loan-forms')
-      .createSignedUrl(templatePath, 60);
-    setDownloading(false);
-    if (signError || !signed) {
-      setError('Could not open the loan application form. Please try again.');
-      return;
+    try {
+      await downloadStorageFile(
+        supabase,
+        'loan-forms',
+        template.file_path,
+        template.file_name || 'loan-application-form.pdf'
+      );
+    } catch {
+      setError('Could not download the loan application form. Please try again.');
+    } finally {
+      setDownloading(false);
     }
-    window.open(signed.signedUrl, '_blank', 'noopener,noreferrer');
   }
 
   async function handleFile(e) {
@@ -118,7 +126,7 @@ export default function LoanDocumentUpload({ userId, onChange }) {
         </p>
       ) : (
         <>
-          {templatePath ? (
+          {template ? (
             <>
               <p className="mt-2 font-body text-xs text-ink-muted">
                 Download the loan application form, fill and sign it, then upload the completed
@@ -131,7 +139,7 @@ export default function LoanDocumentUpload({ userId, onChange }) {
                 className="mt-2 inline-flex items-center gap-1.5 font-body text-xs font-medium text-cooperative underline-offset-2 hover:underline disabled:opacity-50"
               >
                 <Download className="h-3.5 w-3.5" strokeWidth={2.25} />
-                {downloading ? 'Opening…' : 'Download loan application form'}
+                {downloading ? 'Downloading…' : 'Download loan application form'}
               </button>
             </>
           ) : (
